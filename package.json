@@ -22,8 +22,6 @@
   },
   "homepage": "https://github.com/abdullahw1/MediCall#readme",
   "dependencies": {
-    "@guildai/agents-sdk": "^0.2.40",
-    "@guildai/cli": "^0.6.0",
     "@insforge/sdk": "^1.2.5",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",

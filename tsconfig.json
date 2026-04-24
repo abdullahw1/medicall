@@ -44,5 +44,6 @@
 
     "esModuleInterop": true,
     "resolveJsonModule": true,
-  }
+  },
+  "exclude": ["guild-agent", "node_modules", "dist"]
 }
