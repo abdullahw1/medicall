@@ -22,3 +22,10 @@ dist/
 .roo
 .trae
 .windsurf
+
+# Guild.ai build artifacts
+guild-agent/dist/
+guild-agent/node_modules/
+
+# OS
+.DS_Store
