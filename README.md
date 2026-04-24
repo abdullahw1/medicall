@@ -11,6 +11,7 @@ This repo now includes the Person 2 foundation:
 ## Quick Start
 
 This project uses the TypeScript 7 native preview toolchain (`tsgo`) for type-check and build scripts.
+For InsForge integration, this project uses the `@insforge/sdk` client pattern (`INSFORGE_URL` + `INSFORGE_ANON_KEY`) with email alerts enabled by default. SMS is deferred as a future enhancement.
 
 1. Install dependencies:
 

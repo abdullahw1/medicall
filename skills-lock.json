@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "insforge": {
+      "source": "insforge/agent-skills",
+      "sourceType": "github",
+      "computedHash": "31b47ac20f6d12fd18be5481c1b4d112ed292beb126e9da9ee4edd631f99fb8b"
+    },
+    "tinyfish": {
+      "source": "tinyfish-io/skills",
+      "sourceType": "github",
+      "computedHash": "8d3cff839f0fea92c4acb2dcdff585e13b8827d05832d10b0fdb4d57bc83e96a"
+    }
+  }
+}

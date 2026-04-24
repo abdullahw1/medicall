@@ -3,117 +3,1595 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MediCall Dashboard</title>
+    <meta name="color-scheme" content="light" />
+    <title>MediCall · Care Operations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      /* ──────────────────────────────────────────────────────────────
+         Design tokens. MediCall is a care product that families trust
+         with elderly relatives. The palette is deliberately calm:
+         warm paper background, deep forest-teal as the medical-trust
+         primary, and mono typography for "agent telemetry" surfaces
+         so the system reads as real software, not a mockup.
+         ────────────────────────────────────────────────────────────── */
+      :root {
+        --bg: #f6f4ee;
+        --bg-elev: #fbfaf6;
+        --surface: #ffffff;
+        --surface-muted: #f3f1ea;
+        --border: #e6e1d5;
+        --border-strong: #d8d1bf;
+
+        --ink: #0f1a18;
+        --ink-soft: #334340;
+        --muted: #6b7a77;
+        --faint: #9aa6a3;
+
+        --brand: #0e5148;
+        --brand-ink: #07302a;
+        --brand-soft: #dcebe6;
+        --brand-tint: #eaf4ef;
+
+        --good: #0f8a5f;
+        --good-soft: #dff3ea;
+        --warn: #b16d09;
+        --warn-soft: #fbefd9;
+        --bad: #b4321c;
+        --bad-soft: #fbe4dd;
+        --accent: #6a3fb5;
+        --accent-soft: #ece4fa;
+
+        --radius-sm: 8px;
+        --radius: 14px;
+        --radius-lg: 20px;
+
+        --shadow-sm: 0 1px 0 rgba(14, 26, 24, 0.04),
+          0 1px 2px rgba(14, 26, 24, 0.04);
+        --shadow:
+          0 1px 0 rgba(14, 26, 24, 0.03),
+          0 10px 30px -12px rgba(14, 26, 24, 0.12);
+
+        --font-sans:
+          "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        --font-serif: "Instrument Serif", "Times New Roman", serif;
+        --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo,
+          monospace;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
       body {
-        font-family: Arial, sans-serif;
         margin: 0;
-        background: #f4f7fb;
-        color: #1f2937;
+        padding: 0;
       }
-      .wrap {
-        max-width: 960px;
-        margin: 0 auto;
-        padding: 24px;
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        font-feature-settings: "cv02", "cv11", "ss01";
       }
-      .card {
-        background: #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-        padding: 18px;
-        margin-bottom: 16px;
+
+      a {
+        color: var(--brand);
+        text-decoration: none;
       }
-      .ok {
-        color: #047857;
-        font-weight: bold;
-      }
-      .alert {
-        color: #b91c1c;
-        font-weight: bold;
-      }
-      ul {
-        margin: 10px 0;
+      a:hover {
+        text-decoration: underline;
       }
       button {
-        border: none;
-        border-radius: 8px;
-        background: #2563eb;
-        color: #fff;
-        padding: 10px 14px;
-        cursor: pointer;
+        font-family: inherit;
       }
-      code {
+
+      /* Faint grid texture on the background to give the app depth
+         without being loud. Mimics printed clinical paper. */
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          radial-gradient(
+            rgba(14, 26, 24, 0.04) 1px,
+            transparent 1px
+          );
+        background-size: 22px 22px;
+        background-position: -1px -1px;
+        z-index: 0;
+      }
+
+      /* ── App shell & top bar ───────────────────────────────────── */
+      .shell {
+        position: relative;
+        z-index: 1;
+        max-width: 1360px;
+        margin: 0 auto;
+        padding: 24px 28px 80px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 14px 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        box-shadow: var(--shadow-sm);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: var(--brand);
+        color: white;
+        display: grid;
+        place-items: center;
+        font-family: var(--font-serif);
+        font-size: 22px;
+        line-height: 1;
+        font-style: italic;
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+      }
+      .brand-name {
+        font-size: 16px;
+      }
+      .brand-sub {
+        display: block;
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .live-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: var(--good-soft);
+        color: var(--good);
+        border-radius: 999px;
+        font-weight: 600;
         font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--good);
+        box-shadow: 0 0 0 0 currentColor;
+        animation: pulse 2.2s ease-out infinite;
+      }
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(15, 138, 95, 0.5);
+        }
+        70% {
+          box-shadow: 0 0 0 8px rgba(15, 138, 95, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(15, 138, 95, 0);
+        }
+      }
+
+      .clock {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .clock strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* ── Hero / page heading ───────────────────────────────────── */
+      .hero {
+        margin: 28px 4px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 24px;
+      }
+      .hero h1 {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-weight: 400;
+        font-size: 44px;
+        line-height: 1.05;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .hero h1 em {
+        font-style: italic;
+        color: var(--brand);
+      }
+      .hero p {
+        margin: 10px 0 0;
+        color: var(--muted);
+        max-width: 560px;
+        font-size: 14px;
+      }
+      .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        border: 1px solid var(--border-strong);
+        background: var(--surface);
+        color: var(--ink);
+        font-weight: 500;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .btn:hover {
+        border-color: var(--brand);
+        color: var(--brand);
+      }
+      .btn.primary {
+        background: var(--brand);
+        color: white;
+        border-color: var(--brand-ink);
+      }
+      .btn.primary:hover {
+        background: var(--brand-ink);
+        color: white;
+      }
+      .btn.ghost {
+        background: transparent;
+        border-color: transparent;
+        color: var(--muted);
+      }
+      .btn.ghost:hover {
+        color: var(--ink);
+        background: var(--surface-muted);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      /* ── KPI row ───────────────────────────────────────────────── */
+      .kpis {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+      .kpi {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 18px 18px 16px;
+        position: relative;
+        overflow: hidden;
+      }
+      .kpi-label {
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+        font-weight: 600;
+      }
+      .kpi-value {
+        margin-top: 10px;
+        font-family: var(--font-serif);
+        font-size: 40px;
+        line-height: 1;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      .kpi-value small {
+        font-family: var(--font-sans);
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
+        margin-left: 4px;
+      }
+      .kpi-meta {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .kpi-accent {
+        position: absolute;
+        right: -12px;
+        top: -12px;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: var(--brand-tint);
+        opacity: 0.7;
+      }
+      .kpi.alert .kpi-accent {
+        background: var(--bad-soft);
+      }
+      .kpi.warn .kpi-accent {
+        background: var(--warn-soft);
+      }
+
+      /* ── Main grid (two columns) ───────────────────────────────── */
+      .grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+        gap: 18px;
+      }
+      @media (max-width: 1024px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .kpis {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      /* ── Card primitive ────────────────────────────────────────── */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+      .card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 18px 10px;
+        gap: 12px;
+      }
+      .card-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0.02em;
+      }
+      .card-title .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        font-weight: 500;
+      }
+      .card-body {
+        padding: 6px 18px 18px;
+      }
+      .card-body.flush {
+        padding: 0;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        background: var(--surface-muted);
+        color: var(--ink-soft);
+      }
+      .chip.good {
+        background: var(--good-soft);
+        color: var(--good);
+      }
+      .chip.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .chip.bad {
+        background: var(--bad-soft);
+        color: var(--bad);
+      }
+      .chip.info {
+        background: var(--brand-soft);
+        color: var(--brand-ink);
+      }
+      .chip.violet {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .chip-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+
+      /* ── Patient roster ────────────────────────────────────────── */
+      .roster {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .roster li {
+        display: grid;
+        grid-template-columns: 44px 1fr auto;
+        gap: 14px;
+        align-items: center;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+        transition: background 0.15s ease;
+      }
+      .roster li:first-child {
+        border-top: none;
+      }
+      .roster li:hover {
+        background: var(--bg-elev);
+      }
+      .avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand-soft), var(--brand-tint));
+        color: var(--brand-ink);
+        display: grid;
+        place-items: center;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.02em;
+      }
+      .roster-name {
+        font-weight: 600;
+        color: var(--ink);
+      }
+      .roster-meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 2px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .roster-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .roster-status {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+      }
+      .roster-status .time {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--faint);
+      }
+
+      /* ── Call timeline ─────────────────────────────────────────── */
+      .timeline {
+        position: relative;
+        padding: 4px 18px 18px 36px;
+      }
+      .timeline::before {
+        content: "";
+        position: absolute;
+        left: 28px;
+        top: 10px;
+        bottom: 18px;
+        width: 1px;
+        background: var(--border);
+      }
+      .event {
+        position: relative;
+        padding: 12px 0;
+      }
+      .event::before {
+        content: "";
+        position: absolute;
+        left: -14px;
+        top: 18px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 2px solid var(--brand);
+      }
+      .event.warn::before {
+        border-color: var(--warn);
+      }
+      .event.bad::before {
+        border-color: var(--bad);
+      }
+      .event.muted::before {
+        border-color: var(--faint);
+      }
+      .event-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .event-time {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--faint);
+      }
+      .event-quote {
+        margin: 6px 0 0;
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+      .event-quote::before {
+        content: "\201C";
+        color: var(--brand);
+        font-weight: 600;
+        margin-right: 2px;
+      }
+      .event-quote::after {
+        content: "\201D";
+        color: var(--brand);
+        font-weight: 600;
+        margin-left: 2px;
+      }
+      .event-flags {
+        margin-top: 8px;
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+
+      .empty {
+        padding: 24px 18px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+
+      .filter-row {
+        display: flex;
+        gap: 6px;
+        padding: 0 18px 14px;
+        flex-wrap: wrap;
+      }
+      .filter-chip {
+        cursor: pointer;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        background: transparent;
+        border: 1px solid var(--border);
+        transition: all 0.15s ease;
+      }
+      .filter-chip:hover {
+        color: var(--ink);
+      }
+      .filter-chip.active {
+        background: var(--ink);
+        color: white;
+        border-color: var(--ink);
+      }
+
+      /* ── Agent pipeline (right column) ─────────────────────────── */
+      .agents {
+        display: flex;
+        flex-direction: column;
+      }
+      .agent {
+        display: grid;
+        grid-template-columns: 28px 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+      }
+      .agent:first-child {
+        border-top: none;
+      }
+      .agent-step {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--faint);
+        letter-spacing: 0.08em;
+      }
+      .agent-title {
+        font-weight: 600;
+        font-size: 13px;
+      }
+      .agent-sub {
+        font-size: 11.5px;
+        color: var(--muted);
+        margin-top: 2px;
+      }
+      .agent-status {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+      }
+      .agent-status.running {
+        color: var(--good);
+      }
+      .agent-status.idle {
+        color: var(--faint);
+      }
+      .agent-status.triggered {
+        color: var(--accent);
+      }
+
+      /* ── FDA monitor block ─────────────────────────────────────── */
+      .fda-source {
+        padding: 12px 18px;
+        background: var(--brand-tint);
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+      .fda-source small {
+        color: var(--brand-ink);
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+      }
+      .fda-alert {
+        padding: 14px 18px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        gap: 12px;
+      }
+      .fda-alert:first-of-type {
+        border-top: none;
+      }
+      .fda-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        background: var(--warn-soft);
+        color: var(--warn);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .fda-alert p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--ink-soft);
+        line-height: 1.45;
+      }
+      .fda-alert a {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      /* ── Weekly summary ─────────────────────────────────────── */
+      .summary-quote {
+        font-family: var(--font-serif);
+        font-size: 19px;
+        line-height: 1.35;
+        color: var(--ink);
+        padding: 14px 18px 6px;
+        font-style: italic;
+      }
+      .summary-meta {
+        padding: 8px 18px 18px;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--faint);
+        letter-spacing: 0.04em;
+      }
+
+      /* ── Footer ────────────────────────────────────────────────── */
+      .footer {
+        margin-top: 36px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 11.5px;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+        flex-wrap: wrap;
+      }
+      .footer .sponsors {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      /* ── Toast ─────────────────────────────────────────────────── */
+      .toast-wrap {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        z-index: 50;
+      }
+      .toast {
+        background: var(--ink);
+        color: white;
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-size: 13px;
+        box-shadow: var(--shadow);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 240px;
+        animation: rise 0.25s ease-out;
+      }
+      .toast.good {
+        background: var(--brand-ink);
+      }
+      .toast.bad {
+        background: var(--bad);
+      }
+      @keyframes rise {
+        from {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      /* ── Loading skeleton ──────────────────────────────────────── */
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--surface-muted) 0%,
+          var(--bg-elev) 50%,
+          var(--surface-muted) 100%
+        );
+        background-size: 200% 100%;
+        animation: shimmer 1.4s linear infinite;
+        border-radius: 6px;
+      }
+      @keyframes shimmer {
+        from {
+          background-position: 200% 0;
+        }
+        to {
+          background-position: -200% 0;
+        }
       }
     </style>
   </head>
   <body>
-    <div class="wrap">
-      <h1>MediCall Care Dashboard</h1>
-      <div class="card">
-        <strong>Live overview</strong>
-        <p id="totals">Loading...</p>
+    <!-- ─────────────────────────────────────────────────────────────
+         App shell. The markup is rendered once and then hydrated by
+         the data-fetching code below. Every dynamic region has a
+         stable id so updates are targeted and DOM churn stays low.
+         ───────────────────────────────────────────────────────────── -->
+    <div class="shell">
+      <!-- Top bar: brand, live status, current time. A permanent signal
+           that the system is online and autonomous. -->
+      <header class="topbar" role="banner">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">m</div>
+          <div>
+            <span class="brand-name">MediCall</span>
+            <span class="brand-sub">Care Operations</span>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <span class="live-pill" title="All agents reachable">
+            <span class="live-dot"></span>
+            <span id="health-label">System healthy</span>
+          </span>
+          <span class="clock">
+            <strong id="clock-date">—</strong>
+            <span id="clock-time"></span>
+          </span>
+        </div>
+      </header>
+
+      <!-- Hero: the human framing. Serif heading anchors the product
+           in something that feels less clinical and more familial. -->
+      <section class="hero">
+        <div>
+          <h1>
+            Every morning, a <em>call that shows up</em>—<br />
+            so families never find out too late.
+          </h1>
+          <p id="hero-sub">
+            Autonomous medication adherence calls, deterministic
+            escalation, and live FDA safety grounding. Monitoring runs
+            without human prompt.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button class="btn" id="trigger-weekly">Weekly report</button>
+          <button class="btn primary" id="trigger-call">
+            <span>▶</span> Run morning call
+          </button>
+        </div>
+      </section>
+
+      <!-- KPI row: four operator-level numbers. Deliberately few. -->
+      <section class="kpis" aria-label="Today at a glance">
+        <div class="kpi">
+          <div class="kpi-accent"></div>
+          <div class="kpi-label">Patients on watch</div>
+          <div class="kpi-value" id="kpi-patients">—</div>
+          <div class="kpi-meta" id="kpi-patients-sub">Loading…</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-accent"></div>
+          <div class="kpi-label">Calls in last 24h</div>
+          <div class="kpi-value" id="kpi-calls">—</div>
+          <div class="kpi-meta" id="kpi-calls-sub">Loading…</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-accent"></div>
+          <div class="kpi-label">Adherence rate</div>
+          <div class="kpi-value">
+            <span id="kpi-adherence">—</span><small>last 7 days</small>
+          </div>
+          <div class="kpi-meta" id="kpi-adherence-sub">Loading…</div>
+        </div>
+        <div class="kpi" id="kpi-alert-card">
+          <div class="kpi-accent"></div>
+          <div class="kpi-label">Escalations today</div>
+          <div class="kpi-value" id="kpi-alerts">—</div>
+          <div class="kpi-meta" id="kpi-alerts-sub">Loading…</div>
+        </div>
+      </section>
+
+      <!-- Two-column operations grid. Left = patient-facing reality,
+           right = agent machinery and safety grounding. -->
+      <div class="grid">
+        <!-- ── Left column ────────────────────────────────────── -->
+        <div class="col">
+          <section class="card" aria-label="Patients on watch">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Patients on watch</span>
+                <span class="eyebrow">Roster</span>
+              </div>
+              <span class="chip info" id="roster-count">
+                <span class="chip-dot"></span>
+                <span>—</span>
+              </span>
+            </div>
+            <ul class="roster" id="roster"></ul>
+          </section>
+
+          <section class="card" aria-label="Call timeline">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Recent calls</span>
+                <span class="eyebrow">Vapi webhook</span>
+              </div>
+              <button class="btn ghost" id="refresh-calls" title="Refresh">
+                ⟳ Refresh
+              </button>
+            </div>
+            <div class="filter-row" id="filter-row">
+              <button class="filter-chip active" data-filter="all">
+                All
+              </button>
+              <button class="filter-chip" data-filter="took_meds">
+                Took meds
+              </button>
+              <button class="filter-chip" data-filter="missed_meds">
+                Missed
+              </button>
+              <button class="filter-chip" data-filter="no_answer">
+                No answer
+              </button>
+              <button class="filter-chip" data-filter="concern">
+                Concern
+              </button>
+              <button class="filter-chip" data-filter="escalated">
+                Escalated
+              </button>
+            </div>
+            <div class="timeline" id="timeline"></div>
+          </section>
+        </div>
+
+        <!-- ── Right column ───────────────────────────────────── -->
+        <div class="col">
+          <section class="card" aria-label="Agent pipeline">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Agent pipeline</span>
+                <span class="eyebrow">Guild.ai orchestration</span>
+              </div>
+              <span class="chip" id="pipeline-mode">
+                <span class="chip-dot"></span>
+                <span>Scheduled</span>
+              </span>
+            </div>
+            <div class="agents" id="agents">
+              <div class="agent">
+                <span class="agent-step">01</span>
+                <div>
+                  <div class="agent-title">TinyFish FDA Monitor</div>
+                  <div class="agent-sub">
+                    Nightly scrape of FDA recall &amp; safety feed, matched
+                    to each patient's medication list.
+                  </div>
+                </div>
+                <span class="agent-status idle" id="agent-fda-status">
+                  Idle
+                </span>
+              </div>
+              <div class="agent">
+                <span class="agent-step">02</span>
+                <div>
+                  <div class="agent-title">Call Agent · Vapi</div>
+                  <div class="agent-sub">
+                    Outbound STT + LLM + TTS call with FDA alerts injected
+                    into system prompt.
+                  </div>
+                </div>
+                <span class="agent-status running" id="agent-call-status">
+                  Armed
+                </span>
+              </div>
+              <div class="agent">
+                <span class="agent-step">03</span>
+                <div>
+                  <div class="agent-title">Pharmacology Agent</div>
+                  <div class="agent-sub">
+                    Triggers only when the patient asks a drug-specific
+                    question. Queries Ghost drug DB.
+                  </div>
+                </div>
+                <span class="agent-status idle" id="agent-pharma-status">
+                  Standby
+                </span>
+              </div>
+              <div class="agent">
+                <span class="agent-step">04</span>
+                <div>
+                  <div class="agent-title">Alert Agent · InsForge</div>
+                  <div class="agent-sub">
+                    Deterministic escalation: concern flag, 2+ missed
+                    doses, or 3 no-answers in a row.
+                  </div>
+                </div>
+                <span class="agent-status idle" id="agent-alert-status">
+                  Watching
+                </span>
+              </div>
+              <div class="agent">
+                <span class="agent-step">05</span>
+                <div>
+                  <div class="agent-title">Weekly Report Agent</div>
+                  <div class="agent-sub">
+                    Plain-English summary mailed to caregiver &amp; doctor
+                    every Sunday 6pm.
+                  </div>
+                </div>
+                <span class="agent-status idle" id="agent-weekly-status">
+                  Next: Sunday 18:00
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section class="card" aria-label="FDA safety monitor">
+            <div class="card-head">
+              <div class="card-title">
+                <span>FDA safety monitor</span>
+                <span class="eyebrow">TinyFish · web-grounded</span>
+              </div>
+              <button class="btn" id="fda-run">Run match</button>
+            </div>
+            <div class="fda-source">
+              <small id="fda-source-line">
+                Source · fda.gov recalls RSS · last checked —
+              </small>
+              <span class="chip violet" id="fda-source-chip">
+                <span class="chip-dot"></span>
+                Web-grounded
+              </span>
+            </div>
+            <div id="fda-alerts">
+              <div class="empty">
+                Click "Run match" to pull live FDA recalls and match
+                them against this patient's medications.
+              </div>
+            </div>
+          </section>
+
+          <section class="card" aria-label="Weekly summary">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Weekly summary</span>
+                <span class="eyebrow">Generated</span>
+              </div>
+              <button class="btn ghost" id="summary-refresh">Refresh</button>
+            </div>
+            <p class="summary-quote" id="summary-text">
+              Generating summary for the last 7 days…
+            </p>
+            <div class="summary-meta" id="summary-meta">—</div>
+          </section>
+        </div>
       </div>
 
-      <div class="card">
-        <strong>Latest call results</strong>
-        <ul id="calls"></ul>
-      </div>
-
-      <div class="card">
-        <strong>TinyFish FDA check</strong>
-        <p>
-          <button id="fda-btn">Run FDA Medication Match</button>
-        </p>
-        <pre id="fda-output"><code>Ready.</code></pre>
-      </div>
+      <footer class="footer">
+        <div>
+          MediCall · Built with Vapi · Guild.ai · InsForge · TinyFish
+        </div>
+        <div class="sponsors">
+          <span>vapi.ai</span>
+          <span>guild.ai</span>
+          <span>insforge.dev</span>
+          <span>tinyfish.io</span>
+        </div>
+      </footer>
     </div>
 
+    <div class="toast-wrap" id="toasts" aria-live="polite"></div>
+
     <script>
-      const callsEl = document.getElementById("calls");
-      const totalsEl = document.getElementById("totals");
-      const fdaOutputEl = document.getElementById("fda-output");
-      const fdaButton = document.getElementById("fda-btn");
+      /* ────────────────────────────────────────────────────────────
+         Dashboard controller. Vanilla JS, no build step required —
+         keeps the demo deploy-proof (static HTML from Express).
 
-      const render = async () => {
-        const [patientsRes, callsRes] = await Promise.all([
-          fetch("/api/patients"),
-          fetch("/api/call-results"),
-        ]);
-        const patients = await patientsRes.json();
-        const calls = await callsRes.json();
-
-        totalsEl.textContent = `${patients.length} patient(s), ${calls.length} call result(s).`;
-
-        callsEl.innerHTML = "";
-        for (const call of calls.slice(0, 10)) {
-          const li = document.createElement("li");
-          const statusClass = call.alert_sent ? "alert" : "ok";
-          li.innerHTML = `<span class="${statusClass}">${call.status}</span> — ${new Date(call.timestamp).toLocaleString()} — ${call.transcript}`;
-          callsEl.appendChild(li);
-        }
+         Responsibilities:
+           1. Fetch /api/patients and /api/call-results on interval.
+           2. Derive KPIs, roster status, and filter the timeline.
+           3. Drive the agent pipeline pulse based on live data.
+           4. Handle action buttons: run call, FDA match, weekly
+              report, and refreshes.
+         ──────────────────────────────────────────────────────────── */
+      const $ = (sel) => document.querySelector(sel);
+      const el = {
+        healthLabel: $("#health-label"),
+        clockDate: $("#clock-date"),
+        clockTime: $("#clock-time"),
+        kpiPatients: $("#kpi-patients"),
+        kpiPatientsSub: $("#kpi-patients-sub"),
+        kpiCalls: $("#kpi-calls"),
+        kpiCallsSub: $("#kpi-calls-sub"),
+        kpiAdherence: $("#kpi-adherence"),
+        kpiAdherenceSub: $("#kpi-adherence-sub"),
+        kpiAlerts: $("#kpi-alerts"),
+        kpiAlertsSub: $("#kpi-alerts-sub"),
+        kpiAlertCard: $("#kpi-alert-card"),
+        rosterCount: $("#roster-count"),
+        roster: $("#roster"),
+        timeline: $("#timeline"),
+        filterRow: $("#filter-row"),
+        agentFda: $("#agent-fda-status"),
+        agentCall: $("#agent-call-status"),
+        agentPharma: $("#agent-pharma-status"),
+        agentAlert: $("#agent-alert-status"),
+        agentWeekly: $("#agent-weekly-status"),
+        fdaSourceLine: $("#fda-source-line"),
+        fdaAlerts: $("#fda-alerts"),
+        summaryText: $("#summary-text"),
+        summaryMeta: $("#summary-meta"),
+        toasts: $("#toasts"),
       };
 
-      fdaButton.addEventListener("click", async () => {
-        const patientsRes = await fetch("/api/patients");
-        const patients = await patientsRes.json();
-        const patient = patients[0];
-        if (!patient) {
-          fdaOutputEl.textContent = "No patients loaded.";
+      const state = {
+        patients: [],
+        calls: [],
+        filter: "all",
+        lastFdaRun: null,
+        fdaPayload: null,
+      };
+
+      /* ── Pure helpers ────────────────────────────────────────── */
+      const statusMeta = {
+        took_meds: { label: "Took meds", chip: "good", dotClass: "" },
+        missed_meds: { label: "Missed dose", chip: "warn", dotClass: "warn" },
+        no_answer: { label: "No answer", chip: "", dotClass: "muted" },
+        concern: { label: "Concern flagged", chip: "bad", dotClass: "bad" },
+      };
+
+      const initialsOf = (name) =>
+        name
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 2)
+          .map((w) => w[0].toUpperCase())
+          .join("");
+
+      const timeAgo = (iso) => {
+        const delta = Date.now() - new Date(iso).getTime();
+        const m = Math.round(delta / 60000);
+        if (m < 1) return "just now";
+        if (m < 60) return `${m}m ago`;
+        const h = Math.round(m / 60);
+        if (h < 24) return `${h}h ago`;
+        return `${Math.round(h / 24)}d ago`;
+      };
+
+      const fmtTime = (iso) =>
+        new Date(iso).toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+
+      const toast = (msg, variant = "") => {
+        const node = document.createElement("div");
+        node.className = `toast ${variant}`.trim();
+        node.textContent = msg;
+        el.toasts.appendChild(node);
+        setTimeout(() => {
+          node.style.opacity = "0";
+          node.style.transform = "translateY(8px)";
+          setTimeout(() => node.remove(), 250);
+        }, 3200);
+      };
+
+      /* ── Clock ───────────────────────────────────────────────── */
+      const renderClock = () => {
+        const now = new Date();
+        el.clockDate.textContent = now.toLocaleDateString([], {
+          weekday: "long",
+          month: "short",
+          day: "numeric",
+        });
+        el.clockTime.textContent = now.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+      };
+
+      /* ── KPIs ────────────────────────────────────────────────── */
+      const renderKpis = () => {
+        const { patients, calls } = state;
+        const last24 = Date.now() - 24 * 60 * 60 * 1000;
+        const last7 = Date.now() - 7 * 24 * 60 * 60 * 1000;
+
+        const todays = calls.filter(
+          (c) => new Date(c.timestamp).getTime() >= last24,
+        );
+        const weekly = calls.filter(
+          (c) => new Date(c.timestamp).getTime() >= last7,
+        );
+
+        const weeklyTook = weekly.filter((c) => c.status === "took_meds")
+          .length;
+        const adherence = weekly.length
+          ? Math.round((weeklyTook / weekly.length) * 100)
+          : null;
+
+        const escalations = todays.filter((c) => c.alert_sent).length;
+
+        el.kpiPatients.textContent = patients.length;
+        el.kpiPatientsSub.textContent = patients.length
+          ? `${patients[0].timezone.replace(/_/g, " ")} · ${patients[0]
+              .call_time}`
+          : "No patients loaded";
+
+        el.kpiCalls.textContent = todays.length;
+        el.kpiCallsSub.textContent = todays.length
+          ? `Most recent ${timeAgo(todays[0].timestamp)}`
+          : "No calls yet today";
+
+        el.kpiAdherence.textContent =
+          adherence == null ? "—" : `${adherence}%`;
+        el.kpiAdherenceSub.textContent =
+          weekly.length === 0
+            ? "No data yet"
+            : `${weeklyTook} of ${weekly.length} dose-checks confirmed`;
+
+        el.kpiAlerts.textContent = escalations;
+        el.kpiAlertsSub.textContent = escalations
+          ? "Caregiver + doctor notified"
+          : "No escalations — quiet day";
+        el.kpiAlertCard.classList.toggle("alert", escalations > 0);
+      };
+
+      /* ── Roster ──────────────────────────────────────────────── */
+      const renderRoster = () => {
+        const { patients, calls } = state;
+        el.rosterCount.querySelector("span:last-child").textContent =
+          `${patients.length} active`;
+
+        if (patients.length === 0) {
+          el.roster.innerHTML =
+            '<li class="empty">No patients loaded.</li>';
           return;
         }
 
-        fdaOutputEl.textContent = "Checking FDA feed...";
-        const response = await fetch(
-          `/api/tinyfish/fda-alerts/${patient.patient_id}`,
+        const frag = document.createDocumentFragment();
+        for (const p of patients) {
+          const latest = calls.find((c) => c.patient_id === p.patient_id);
+          const meta = latest
+            ? statusMeta[latest.status] || {
+                label: latest.status,
+                chip: "",
+              }
+            : null;
+
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div class="avatar" aria-hidden="true">${initialsOf(p.name)}</div>
+            <div>
+              <div class="roster-name">${p.name}</div>
+              <div class="roster-meta">
+                <span>${p.medications.length} meds</span>
+                <span>·</span>
+                <span>${p.call_time} ${p.timezone
+                  .split("/")[1]
+                  .replace(/_/g, " ")}</span>
+                <span>·</span>
+                <span>${p.phone.replace(
+                  /(\+1)(\d{3})(\d{3})(\d{4})/,
+                  "$1 ($2) $3-$4",
+                )}</span>
+              </div>
+            </div>
+            <div class="roster-status">
+              ${
+                meta
+                  ? `<span class="chip ${meta.chip}"><span class="chip-dot"></span>${meta.label}</span>`
+                  : `<span class="chip"><span class="chip-dot"></span>Awaiting first call</span>`
+              }
+              ${
+                latest
+                  ? `<span class="time">${timeAgo(latest.timestamp)}</span>`
+                  : ""
+              }
+            </div>
+          `;
+          frag.appendChild(li);
+        }
+        el.roster.replaceChildren(frag);
+      };
+
+      /* ── Timeline ────────────────────────────────────────────── */
+      const renderTimeline = () => {
+        const calls = state.calls.filter((c) => {
+          if (state.filter === "all") return true;
+          if (state.filter === "escalated") return c.alert_sent;
+          return c.status === state.filter;
+        });
+
+        if (calls.length === 0) {
+          el.timeline.innerHTML = `<div class="empty">No calls match this filter yet.</div>`;
+          return;
+        }
+
+        const frag = document.createDocumentFragment();
+        for (const c of calls.slice(0, 20)) {
+          const meta = statusMeta[c.status] || {
+            label: c.status,
+            chip: "",
+            dotClass: "",
+          };
+          const node = document.createElement("div");
+          node.className = `event ${meta.dotClass}`.trim();
+
+          const flagsHtml =
+            c.flags && c.flags.length
+              ? `<div class="event-flags">${c.flags
+                  .map((f) => `<span class="chip">${f}</span>`)
+                  .join("")}</div>`
+              : "";
+
+          const fdaHtml =
+            c.fda_alerts && c.fda_alerts.length
+              ? `<div class="event-flags"><span class="chip violet"><span class="chip-dot"></span>FDA context (${c.fda_alerts.length})</span></div>`
+              : "";
+
+          const alertChip = c.alert_sent
+            ? `<span class="chip bad"><span class="chip-dot"></span>Caregiver alerted</span>`
+            : "";
+
+          node.innerHTML = `
+            <div class="event-head">
+              <span class="chip ${meta.chip}"><span class="chip-dot"></span>${meta.label}</span>
+              ${alertChip}
+              <span class="event-time">${fmtTime(c.timestamp)} · ${timeAgo(
+                c.timestamp,
+              )}</span>
+            </div>
+            <p class="event-quote">${escapeHtml(c.transcript || "—")}</p>
+            ${flagsHtml}
+            ${fdaHtml}
+          `;
+          frag.appendChild(node);
+        }
+        el.timeline.replaceChildren(frag);
+      };
+
+      const escapeHtml = (s) =>
+        s.replace(/[&<>"']/g, (ch) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[ch]);
+
+      /* ── Agent pipeline telemetry ────────────────────────────── */
+      const renderAgents = () => {
+        const calls = state.calls;
+        const last24 = Date.now() - 24 * 60 * 60 * 1000;
+        const recent = calls.filter(
+          (c) => new Date(c.timestamp).getTime() >= last24,
         );
-        const payload = await response.json();
-        fdaOutputEl.textContent = JSON.stringify(payload, null, 2);
+
+        const fdaTouched = recent.some(
+          (c) => c.fda_alerts && c.fda_alerts.length > 0,
+        );
+        el.agentFda.textContent = state.lastFdaRun
+          ? `Ran ${timeAgo(state.lastFdaRun)}`
+          : fdaTouched
+            ? "Data loaded"
+            : "Idle";
+        el.agentFda.className = `agent-status ${
+          state.lastFdaRun ? "running" : "idle"
+        }`;
+
+        el.agentCall.textContent = recent.length
+          ? `${recent.length} call${recent.length === 1 ? "" : "s"} / 24h`
+          : "Armed";
+        el.agentCall.className = `agent-status ${
+          recent.length ? "running" : "idle"
+        }`;
+
+        const drugQ = recent.some(
+          (c) => c.flags && c.flags.includes("drug_question"),
+        );
+        el.agentPharma.textContent = drugQ ? "Triggered" : "Standby";
+        el.agentPharma.className = `agent-status ${
+          drugQ ? "triggered" : "idle"
+        }`;
+
+        const alerts = recent.filter((c) => c.alert_sent).length;
+        el.agentAlert.textContent = alerts
+          ? `${alerts} escalation${alerts === 1 ? "" : "s"} sent`
+          : "Watching";
+        el.agentAlert.className = `agent-status ${
+          alerts ? "triggered" : "idle"
+        }`;
+      };
+
+      /* ── Weekly summary ──────────────────────────────────────── */
+      const loadWeeklySummary = async () => {
+        const patient = state.patients[0];
+        if (!patient) return;
+        try {
+          const r = await fetch(
+            `/api/reports/weekly/${patient.patient_id}`,
+          );
+          const j = await r.json();
+          el.summaryText.textContent = j.summary || "No summary available.";
+          el.summaryMeta.textContent = `Generated · ${new Date().toLocaleString()}`;
+        } catch (e) {
+          el.summaryText.textContent = "Unable to generate summary.";
+          el.summaryMeta.textContent = "—";
+        }
+      };
+
+      /* ── FDA run ─────────────────────────────────────────────── */
+      const runFdaMatch = async () => {
+        const patient = state.patients[0];
+        if (!patient) {
+          toast("No patients loaded", "bad");
+          return;
+        }
+        el.fdaAlerts.innerHTML = `<div class="empty">Checking FDA recalls feed…</div>`;
+        try {
+          const r = await fetch(
+            `/api/tinyfish/fda-alerts/${patient.patient_id}`,
+          );
+          const payload = await r.json();
+          state.lastFdaRun = new Date().toISOString();
+          state.fdaPayload = payload;
+          el.fdaSourceLine.textContent = `Source · fda.gov recalls RSS · last checked ${new Date().toLocaleTimeString(
+            [],
+            { hour: "numeric", minute: "2-digit" },
+          )}${payload.source === "fallback_fixture" ? " · static fixture" : ""}`;
+
+          if (!payload.alerts || payload.alerts.length === 0) {
+            el.fdaAlerts.innerHTML = `<div class="empty">No FDA alerts matched ${patient.medications
+              .join(", ")}. All clear.</div>`;
+          } else {
+            el.fdaAlerts.innerHTML = payload.alerts
+              .map((line, idx) => {
+                const linkMatch = line.match(/\((https?:[^)]+)\)\s*$/);
+                const link = linkMatch ? linkMatch[1] : null;
+                const title = link
+                  ? line.replace(/\s*\(https?:[^)]+\)\s*$/, "")
+                  : line;
+                return `
+                  <div class="fda-alert">
+                    <div class="fda-icon">!</div>
+                    <div>
+                      <p>${escapeHtml(title)}</p>
+                      ${
+                        link
+                          ? `<a href="${link}" target="_blank" rel="noopener">${link}</a>`
+                          : ""
+                      }
+                    </div>
+                  </div>
+                `;
+              })
+              .join("");
+          }
+          renderAgents();
+          toast(
+            payload.matched_count
+              ? `${payload.matched_count} FDA alert${
+                  payload.matched_count === 1 ? "" : "s"
+                } matched`
+              : "FDA feed clear",
+            payload.matched_count ? "bad" : "good",
+          );
+        } catch (e) {
+          el.fdaAlerts.innerHTML = `<div class="empty">FDA feed unreachable.</div>`;
+          toast("FDA fetch failed", "bad");
+        }
+      };
+
+      /* ── Manual call trigger (demo path) ─────────────────────── */
+      const runMorningCall = async () => {
+        const patient = state.patients[0];
+        if (!patient) return toast("No patients loaded", "bad");
+
+        el.agentCall.textContent = "Calling…";
+        el.agentCall.className = "agent-status triggered";
+
+        const scenarios = [
+          {
+            status: "took_meds",
+            transcript:
+              "Yes, I took all my morning pills with toast and coffee.",
+            flags: [],
+          },
+          {
+            status: "missed_meds",
+            transcript:
+              "I think I forgot the blue one. I'll take it after I talk to you.",
+            flags: [],
+          },
+          {
+            status: "concern",
+            transcript:
+              "I feel a little dizzy this morning, and my chest has been tight.",
+            flags: ["dizziness", "chest_pain"],
+          },
+          {
+            status: "no_answer",
+            transcript: "(No response after 4 rings.)",
+            flags: [],
+          },
+        ];
+        const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+        try {
+          const body = {
+            patient_id: patient.patient_id,
+            timestamp: new Date().toISOString(),
+            status: pick.status,
+            transcript: pick.transcript,
+            flags: pick.flags,
+            fda_alerts: state.fdaPayload?.alerts ?? [],
+          };
+          const r = await fetch("/api/call-results", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const result = await r.json();
+          if (result.alert_sent) {
+            toast(`Escalated to caregiver · ${pick.status}`, "bad");
+          } else {
+            toast(`Call logged · ${pick.status}`, "good");
+          }
+          await refresh();
+        } catch (e) {
+          toast("Call failed", "bad");
+        }
+      };
+
+      /* ── Data fetch & refresh ────────────────────────────────── */
+      const refresh = async () => {
+        try {
+          const [pR, cR] = await Promise.all([
+            fetch("/api/patients"),
+            fetch("/api/call-results"),
+          ]);
+          if (!pR.ok || !cR.ok) throw new Error("network");
+          state.patients = await pR.json();
+          state.calls = await cR.json();
+          el.healthLabel.textContent = "System healthy";
+          renderKpis();
+          renderRoster();
+          renderTimeline();
+          renderAgents();
+        } catch (e) {
+          el.healthLabel.textContent = "Reconnecting…";
+        }
+      };
+
+      /* ── Wire interactions ───────────────────────────────────── */
+      el.filterRow.addEventListener("click", (e) => {
+        const btn = e.target.closest(".filter-chip");
+        if (!btn) return;
+        el.filterRow
+          .querySelectorAll(".filter-chip")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        state.filter = btn.dataset.filter;
+        renderTimeline();
       });
 
-      render();
-      setInterval(render, 8000);
+      $("#refresh-calls").addEventListener("click", () => {
+        refresh();
+        toast("Refreshed");
+      });
+      $("#fda-run").addEventListener("click", runFdaMatch);
+      $("#trigger-call").addEventListener("click", runMorningCall);
+      $("#trigger-weekly").addEventListener("click", loadWeeklySummary);
+      $("#summary-refresh").addEventListener("click", loadWeeklySummary);
+
+      /* ── Boot ────────────────────────────────────────────────── */
+      renderClock();
+      setInterval(renderClock, 30_000);
+      refresh().then(loadWeeklySummary);
+      setInterval(refresh, 8000);
     </script>
   </body>
 </html>
-

@@ -1,7 +1,7 @@
 import { config } from "../config.js";
 import { CallResult, Patient } from "../types.js";
 
-type NotificationChannel = "sms" | "email";
+type NotificationChannel = "email";
 
 const sendMockNotification = async (
   channel: NotificationChannel,
@@ -15,34 +15,50 @@ const sendMockNotification = async (
   );
 };
 
-const sendInsForgeNotification = async (
-  channel: NotificationChannel,
-  recipient: string,
-  message: string,
-): Promise<void> => {
-  if (!config.insforgeApiBaseUrl || !config.insforgeApiKey) {
+type InsforgeClient = {
+  emails: {
+    send: (args: {
+      to: string;
+      subject: string;
+      html: string;
+    }) => Promise<{ error?: unknown }>;
+  };
+};
+
+let insforgeClient: InsforgeClient | null = null;
+
+const getInsforgeClient = async (): Promise<InsforgeClient> => {
+  if (!config.insforgeUrl || !config.insforgeAnonKey) {
     throw new Error(
-      "INSFORGE_API_BASE_URL and INSFORGE_API_KEY are required when USE_MOCK_NOTIFICATIONS=false",
+      "INSFORGE_URL and INSFORGE_ANON_KEY are required when USE_MOCK_NOTIFICATIONS=false",
     );
   }
 
-  const response = await fetch(`${config.insforgeApiBaseUrl}/notifications`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${config.insforgeApiKey}`,
-    },
-    body: JSON.stringify({
-      channel,
-      recipient,
-      message,
-    }),
+  if (!insforgeClient) {
+    const { createClient } = await import("@insforge/sdk");
+    insforgeClient = createClient({
+      baseUrl: config.insforgeUrl,
+      anonKey: config.insforgeAnonKey,
+    });
+  }
+
+  return insforgeClient;
+};
+
+const sendInsForgeNotification = async (
+  _channel: NotificationChannel,
+  recipient: string,
+  message: string,
+): Promise<void> => {
+  const insforge = await getInsforgeClient();
+  const { error } = await insforge.emails.send({
+    to: recipient,
+    subject: "MediCall Alert",
+    html: `<p>${message}</p>`,
   });
 
-  if (!response.ok) {
-    throw new Error(
-      `InsForge notification failed with status ${response.status}`,
-    );
+  if (error) {
+    throw new Error(`InsForge SMS invoke failed: ${String(error)}`);
   }
 };
 
@@ -72,7 +88,6 @@ export const sendCaregiverAndDoctorAlert = async (
     .join(" ");
 
   await Promise.all([
-    sendNotification("sms", patient.caregiver_phone, message),
     sendNotification("email", patient.caregiver_email, message),
     sendNotification("email", patient.doctor_email, message),
   ]);
