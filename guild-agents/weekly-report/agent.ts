@@ -3,14 +3,18 @@
 import { type Task, agent } from "@guildai/agents-sdk";
 import { z } from "zod";
 
+const DEFAULT_MEDICALL_BACKEND_URL = "https://medicall-5v26.onrender.com";
+
 const inputSchema = z.object({
   patient_id: z
     .string()
     .describe("Patient ID to generate a weekly report for."),
   backend_url: z
     .string()
-    .default("http://localhost:8080")
-    .describe("MediCall backend base URL."),
+    .default(DEFAULT_MEDICALL_BACKEND_URL)
+    .describe(
+      "MediCall backend base URL (defaults to production Render; use http://localhost:8080 for local).",
+    ),
 });
 type Input = z.infer<typeof inputSchema>;
 
@@ -32,9 +36,11 @@ async function run(input: Input, _task: Task<Tools>): Promise<Output> {
   const baseUrl = input.backend_url.replace(/\/$/, "");
   const url = `${baseUrl}/api/trigger/weekly-report`;
 
+  const headers = new Headers();
+  headers.set("Content-Type", "application/json");
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers,
     body: JSON.stringify({ patient_id: input.patient_id }),
   });
 
@@ -56,7 +62,7 @@ async function run(input: Input, _task: Task<Tools>): Promise<Output> {
 
 export default agent({
   description:
-    "Generates a weekly report for a patient via the backend POST /api/trigger/weekly-report endpoint.",
+    "MediCall weekly report: POST /api/trigger/weekly-report on the deployed backend (defaults to Render). Produces caregiver-facing compliance summary JSON.",
   inputSchema,
   outputSchema,
   tools: {},

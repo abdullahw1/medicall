@@ -12,11 +12,13 @@ MediCall calls your loved ones every morning, checks if they took their meds, an
 
 ### Guild.ai — The Brain
 
-Guild.ai is the **control plane** for MediCall: workspace **`medicall/medicall`**, a published **code-first agent** (`medicall/medicall-call-agent`, auto-managed state, `fetch` to our API), and **real time-based triggers** so runs are not only manual from the dashboard.
+Guild.ai is the **control plane** for MediCall: workspace **`medicall/medicall`** with **four installed, auto-updating code agents** (not one mega-prompt). Each agent is **`"use agent"`** auto-managed state, **`fetch`** to our Render API, and its **own** published semver in Guild’s catalog.
 
-**What runs in production today.** A **daily time trigger** (08:00 UTC) invokes `medicall/medicall-call-agent` with explicit JSON input (`command` + `backend_url` → `https://medicall-5v26.onrender.com`). Each run calls **`POST /api/run-pipeline`**, which is where we chain **FDA feed fetch + medication match**, **Vapi outbound** with dynamic assistant overrides, and persistence on our Node service. You can inspect installs, trigger schedules, and session history in the Guild web app (`Organizations → MediCall → Workspaces → medicall`) or from the repo with **`npm run guild:triggers`**, **`npm run guild:agents`**, and **`npm run guild:sessions:time`** (CLI: `npx @guildai/cli`, not GNU Guile’s `guild`).
+**Installed in the workspace today.** **`medicall-call-agent`** (pipeline), **`medicall-fda-monitor`** (single-patient FDA match), **`medicall-alert-agent`** (escalation / delivery check), **`medicall-weekly-report`** (seven-day summary). Defaults pin **`backend_url`** to **`https://medicall-5v26.onrender.com`** so scheduled runs never depend on localhost.
 
-**What lives in-repo for depth.** Under `guild-agents/` we ship additional **coded** agents (FDA monitor, alert escalation, weekly report) aligned with **`POST /api/trigger/*`** routes—ready to publish and attach as **separate Guild time or webhook triggers** the same way as the call agent, so judges see a deliberate multi-agent split, not a monolith pretending to be “just a cron.”
+**What runs on a schedule.** A **daily time trigger** (08:00 UTC) invokes **`medicall-call-agent`** with JSON input (`command` + explicit **`backend_url`**). That run calls **`POST /api/run-pipeline`** (FDA enrichment, Vapi, persistence). The other three agents are built for **additional time or webhook triggers** per patient or cadence—same product pattern as enterprise “one concern = one delegate.”
+
+**Where to click in Guild (for judges).** **Workspace Agents** shows all four installs and versions. **Workspace Sessions** shows **Chats** (e.g. “Execute project workflow” with real token totals), **Triggers** (scheduled autonomy), and **Agent Tests** (published-agent validation runs). Read **`docs/guild-judge-walkthrough.md`** for a 2-minute spoken script. From the repo: **`npm run guild:agents`**, **`npm run guild:triggers`**, **`npm run guild:sessions`** (CLI: **`npx @guildai/cli`**, not GNU Guile’s **`guild`**).
 
 ### TinyFish — Real-Time FDA Safety
 
@@ -40,4 +42,4 @@ InsForge powers our **multi-channel escalation pipeline**. The moment our alert 
 
 After the call:
 
-> "Samuel's call result is already on the dashboard. The FDA recall was delivered. If this was a concern, his family and doctor would already have an email from InsForge. Four agents, four sponsors, one pipeline — that's MediCall."
+> "Samuel's call result is already on the dashboard. The FDA recall was delivered. If this was a concern, his family and doctor would already have an email from InsForge. In Guild we run **four separate installed agents** on one workspace—call pipeline, FDA delegate, alert delegate, weekly report—each versioned and auditable in **Workspace Sessions**. That's MediCall."
