@@ -152,13 +152,5 @@ export const startOutboundCall = async (
   if (config.useMockVapi) {
     return startMockCall();
   }
-
-  try {
-    return await startLiveCall(request);
-  } catch (error) {
-    console.warn(
-      `Falling back to mock outbound call after Vapi failure: ${String(error)}`,
-    );
-    return startMockCall();
-  }
+  return startLiveCall(request);
 };

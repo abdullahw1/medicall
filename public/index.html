@@ -908,8 +908,7 @@
       /* ── Doctor action panel ────────────────────────────────────
          Only rendered when a concern event has landed in the last
          24 hours. Leads with a one-sentence triage summary a busy
-         clinician could scan, followed by a cited brief preview
-         and an x402 payment gate for the full brief. */
+         clinician could scan, followed by a cited brief preview. */
       .doctor-panel.hidden {
         display: none;
       }
@@ -1000,83 +999,6 @@
         color: var(--ink-soft);
       }
 
-      .x402-gate {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        gap: 14px;
-        align-items: center;
-        margin: 14px 18px 18px;
-        padding: 14px 16px;
-        background: var(--ink);
-        color: white;
-        border-radius: 12px;
-        position: relative;
-        overflow: hidden;
-      }
-      .x402-gate::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: radial-gradient(
-          circle at 20% 0%,
-          rgba(106, 63, 181, 0.45),
-          transparent 60%
-        );
-        pointer-events: none;
-      }
-      .x402-gate .label {
-        font-family: var(--font-mono);
-        font-size: 10.5px;
-        letter-spacing: 0.12em;
-        color: rgba(255, 255, 255, 0.55);
-        text-transform: uppercase;
-      }
-      .x402-gate .amount {
-        font-family: var(--font-serif);
-        font-size: 26px;
-        line-height: 1;
-        margin-top: 4px;
-      }
-      .x402-gate .sub {
-        font-size: 12px;
-        color: rgba(255, 255, 255, 0.65);
-        margin-top: 4px;
-      }
-      .x402-gate button {
-        background: white;
-        color: var(--ink);
-        border: none;
-        border-radius: 10px;
-        padding: 10px 14px;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 13px;
-        position: relative;
-      }
-      .x402-gate button:hover {
-        background: var(--brand-soft);
-      }
-      .x402-gate.unlocked {
-        background: var(--brand-ink);
-      }
-      .x402-gate.unlocked::before {
-        background: radial-gradient(
-          circle at 20% 0%,
-          rgba(15, 138, 95, 0.45),
-          transparent 60%
-        );
-      }
-      .x402-gate.unlocked .unlock-state {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--good);
-        color: white;
-        padding: 6px 10px;
-        border-radius: 8px;
-        font-size: 12px;
-        font-weight: 600;
-      }
 
       /* ── Operator / audit panel ─────────────────────────────── */
       .audit {
@@ -1208,9 +1130,6 @@
           </span>
           <span class="demo-step" data-step="4">
             <span class="demo-num">04</span>Cited brief
-          </span>
-          <span class="demo-step" data-step="5">
-            <span class="demo-num">05</span>x402 unlock
           </span>
         </div>
         <button class="demo-close" id="demo-close" title="Dismiss">
@@ -1445,10 +1364,9 @@
           <!-- Doctor action panel. Triage banner leads with a
                scannable one-liner a busy clinician could parse in
                under three seconds. The cited brief preview is set
-               in the serif face so it reads like clinical prose,
-               and the x402 gate below it becomes the monetization
-               beat in the demo. IDs below preserve backward
-               compatibility with the existing brief endpoints. -->
+               in the serif face so it reads like clinical prose.
+               IDs below preserve backward compatibility with
+               the existing brief endpoints. -->
           <section
             class="card doctor-panel"
             id="doctor-panel"
@@ -1506,25 +1424,9 @@
               ></div>
             </div>
 
-            <div
-              class="x402-gate"
-              id="x402-gate"
-              style="display: none"
-            >
-              <div>
-                <div class="label">x402 · unlock full brief</div>
-                <div class="amount" id="x402-amount">$0.25</div>
-                <div class="sub" id="x402-sub">
-                  Pay-per-brief access · settled on-chain · no
-                  subscription
-                </div>
-              </div>
-              <button id="x402-unlock">Unlock full brief</button>
-            </div>
-
             <div class="empty" id="doctor-empty">
               No concern brief yet. When a concern call lands,
-              generate a cited brief to unlock for the physician.
+              generate a cited brief for the physician.
             </div>
           </section>
         </div>
@@ -1634,10 +1536,6 @@
         briefSources: $("#brief-sources"),
         briefCitations: $("#brief-citations"),
         briefGenerate: $("#brief-generate"),
-        x402Gate: $("#x402-gate"),
-        x402Amount: $("#x402-amount"),
-        x402Sub: $("#x402-sub"),
-        x402Unlock: $("#x402-unlock"),
         auditRows: $("#audit-rows"),
         auditCount: $("#audit-count"),
         demoStrip: $("#demo-strip"),
@@ -1654,7 +1552,6 @@
         lastFdaRun: null,
         fdaPayload: null,
         latestBrief: null,
-        briefUnlocked: false,
         demoRunning: false,
       };
 
@@ -1947,20 +1844,16 @@
       };
 
       /* ── Doctor action panel ─────────────────────────────────
-         The panel has four states:
+         The panel has three states:
            - No concern + no brief  → empty message, triage hidden
            - Concern exists + no brief → urgent triage visible,
              "Generate brief" prompts the operator
-           - Brief exists + locked  → full triage + cited preview
-             + x402 gate with "Unlock full brief" CTA
-           - Brief exists + unlocked → full triage + cited preview
-             + x402 gate swapped to green "Unlocked" state */
+           - Brief exists → full triage + cited preview */
       const latestConcernCall = () =>
         state.calls.find((c) => c.status === "concern") ?? null;
 
       const renderDoctorBrief = (brief) => {
         state.latestBrief = brief ?? null;
-        if (!brief) state.briefUnlocked = false;
 
         const concern = latestConcernCall();
         const patient = state.patients[0];
@@ -2023,25 +1916,9 @@
             .map((u) => `<span>${u}</span>`)
             .join("");
 
-          el.x402Gate.style.display = "grid";
-          const price = Number(brief.x402_price_usd ?? 0.25).toFixed(2);
-          el.x402Amount.textContent = `$${price}`;
-          if (state.briefUnlocked) {
-            el.x402Gate.classList.add("unlocked");
-            el.x402Sub.innerHTML =
-              "<span class=\"unlock-state\">✓ Unlocked · full brief delivered</span>";
-            el.x402Unlock.textContent = "View full brief";
-          } else {
-            el.x402Gate.classList.remove("unlocked");
-            el.x402Sub.textContent =
-              "Pay-per-brief access · settled on-chain · no subscription";
-            el.x402Unlock.textContent = "Unlock full brief";
-          }
-
           el.briefGenerate.textContent = "Regenerate";
         } else {
           el.briefBlock.style.display = "none";
-          el.x402Gate.style.display = "none";
           el.briefGenerate.textContent = "Generate brief";
         }
       };
@@ -2063,7 +1940,6 @@
           if (!response.ok) {
             throw new Error(payload.error || "Brief generation failed");
           }
-          state.briefUnlocked = false;
           renderDoctorBrief(payload);
           toast("Doctor cited brief generated", "good");
           return payload;
@@ -2107,12 +1983,7 @@
           return;
         }
 
-        const fdaMode =
-          state.fdaPayload?.source === "fallback_fixture"
-            ? "fallback"
-            : state.lastFdaRun
-              ? "live"
-              : "idle";
+        const fdaMode = state.lastFdaRun ? "live" : "idle";
 
         el.auditRows.innerHTML = rows
           .map((c) => {
@@ -2180,27 +2051,14 @@
         el.agentWeeklyTs.textContent = "Next run · Sunday 18:00 local";
       };
 
-      /* ── x402 unlock (client-side demo beat) ────────────────
-         The backend always returns unlock_state="locked" so the
-         unlock is a dashboard interaction. The flipped state is
-         retained in the JS state so subsequent refreshes don't
-         re-lock the UI for the duration of the demo. */
-      const unlockBrief = () => {
-        if (!state.latestBrief) return;
-        state.briefUnlocked = true;
-        renderDoctorBrief(state.latestBrief);
-        toast("x402 settled · full brief unlocked", "good");
-      };
-
       /* ── Run demo sequence (judging beats, observable) ──────
-         Orchestrates the five beats the spec calls out:
+         Orchestrates the four beats the spec calls out:
            1. Call trigger       → /api/vapi-outbound
-           2. Dashboard update   → /api/vapi-webhook with concern
-                                    transcript + refresh
+           2. Dashboard update   → wait for real webhook persistence
+                                    then refresh
            3. Caregiver alert    → deterministic from webhook
                                     (we visualize the side-effect)
            4. Cited brief        → /api/doctor-briefs/generate/:id
-           5. x402 unlock        → flip the gate state
          Each step updates the demo strip so judges watch the
          autonomy unfold instead of hearing it described. */
       const demoDelay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -2210,6 +2068,21 @@
         if (!step) return;
         step.classList.remove("active", "done");
         if (state) step.classList.add(state);
+      };
+
+      const waitForCallResult = async (callId, maxMs = 120000) => {
+        const started = Date.now();
+        while (Date.now() - started < maxMs) {
+          const response = await fetch("/api/call-results");
+          if (!response.ok) {
+            throw new Error("call-results fetch failed");
+          }
+          const calls = await response.json();
+          const match = calls.find((c) => c.call_id === callId);
+          if (match) return match;
+          await demoDelay(4000);
+        }
+        throw new Error("timed out waiting for webhook result");
       };
 
       const runDemoSequence = async () => {
@@ -2223,7 +2096,7 @@
 
         el.demoStrip.classList.add("visible");
         el.demoStripLabel.textContent = "Running demo sequence…";
-        [1, 2, 3, 4, 5].forEach((n) => setDemoStep(n, null));
+        [1, 2, 3, 4].forEach((n) => setDemoStep(n, null));
 
         try {
           // Step 1 — outbound call trigger.
@@ -2238,20 +2111,9 @@
           setDemoStep(1, "done");
           await demoDelay(450);
 
-          // Step 2 — webhook with concern transcript → dashboard update.
+          // Step 2 — wait for real webhook persistence and refresh.
           setDemoStep(2, "active");
-          const webhook = await fetch("/api/vapi-webhook", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              call_id: outboundPayload.call_id,
-              transcript:
-                "I feel a little dizzy this morning, and my chest has been tight.",
-              call_status: "completed",
-            }),
-          });
-          if (!webhook.ok) throw new Error("webhook failed");
-          const webhookPayload = await webhook.json();
+          const callResult = await waitForCallResult(outboundPayload.call_id);
           await refresh();
           setDemoStep(2, "done");
           await demoDelay(450);
@@ -2259,7 +2121,7 @@
           // Step 3 — caregiver alert beat (already persisted in the
           // webhook path; we just make the side-effect visible).
           setDemoStep(3, "active");
-          const alerted = webhookPayload.result?.alert_sent;
+          const alerted = Boolean(callResult.alert_sent);
           if (alerted) {
             toast("SMS + email sent to caregiver and doctor", "bad");
           } else {
@@ -2274,12 +2136,6 @@
           if (!brief) throw new Error("brief failed");
           await demoDelay(450);
           setDemoStep(4, "done");
-
-          // Step 5 — x402 unlock (client-side demo beat).
-          setDemoStep(5, "active");
-          await demoDelay(500);
-          unlockBrief();
-          setDemoStep(5, "done");
 
           el.demoStripLabel.textContent = "Demo sequence complete";
         } catch (e) {
@@ -2302,13 +2158,16 @@
           const r = await fetch(
             `/api/tinyfish/fda-alerts/${patient.patient_id}`,
           );
+          if (!r.ok) {
+            throw new Error("FDA feed fetch failed");
+          }
           const payload = await r.json();
           state.lastFdaRun = new Date().toISOString();
           state.fdaPayload = payload;
           el.fdaSourceLine.textContent = `Source · fda.gov recalls RSS · last checked ${new Date().toLocaleTimeString(
             [],
             { hour: "numeric", minute: "2-digit" },
-          )}${payload.source === "fallback_fixture" ? " · static fixture" : ""}`;
+          )}`;
 
           if (!payload.alerts || payload.alerts.length === 0) {
             el.fdaAlerts.innerHTML = `<div class="empty">No FDA alerts matched ${patient.medications
@@ -2467,7 +2326,6 @@
       $("#summary-refresh").addEventListener("click", loadWeeklySummary);
       $("#brief-generate").addEventListener("click", generateDoctorBrief);
       $("#trigger-demo").addEventListener("click", runDemoSequence);
-      $("#x402-unlock").addEventListener("click", unlockBrief);
       $("#demo-close").addEventListener("click", () => {
         el.demoStrip.classList.remove("visible");
       });

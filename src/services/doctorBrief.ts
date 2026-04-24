@@ -1,6 +1,5 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { config } from "../config.js";
 import { CallResult, Patient } from "../types.js";
 
 export type DoctorBrief = {
@@ -11,8 +10,6 @@ export type DoctorBrief = {
   preview: string;
   full_brief: string;
   citations: string[];
-  x402_price_usd: number;
-  unlock_state: "locked" | "unlocked";
 };
 
 const CITED_DOC_PATH = resolve(process.cwd(), "docs", "cited.md");
@@ -85,7 +82,6 @@ export const appendCitedBriefMarkdown = async (brief: DoctorBrief): Promise<void
     `- Patient: ${brief.patient_id}`,
     `- Call ID: ${brief.call_id}`,
     `- Generated: ${brief.generated_at}`,
-    `- Unlock: ${brief.unlock_state} ($${brief.x402_price_usd.toFixed(2)} via x402)`,
     "",
     "### Preview",
     brief.preview,
@@ -114,8 +110,6 @@ export const generateDoctorBrief = async (
     preview: buildPreview(patient, callResult),
     full_brief: buildFullBrief(patient, callResult, citations),
     citations,
-    x402_price_usd: config.x402PriceUsd,
-    unlock_state: "locked",
   };
 
   await appendCitedBriefMarkdown(brief);

@@ -173,10 +173,10 @@ Reliability requirement:
 
 ## Fallback Modes
 
-Implement explicit fallback behavior:
-- Vapi failure -> inject pre-recorded transcript into downstream pipeline.
-- TinyFish scrape failure -> use static FDA alert fixture (metformin).
-- InsForge SMS failure -> show dashboard update and mark SMS as pending.
+Keep these contingencies explicit without fabricating synthetic patient data:
+- Vapi failure -> surface failure state in dashboard/operator log and retry manually.
+- TinyFish scrape failure -> return empty FDA list with explicit error state.
+- InsForge notification failure -> preserve call result and alert flag, then show delivery error.
 - Guild.ai scheduler failure -> expose manual trigger control.
 
 ## Devpost Writing Guide
@@ -188,7 +188,7 @@ Structure:
 4. How it works (agent-by-agent in plain English)
 5. Sponsor integration (one paragraph per sponsor with non-swappable rationale)
 6. Autonomy argument (two-level framing)
-7. What's next (x402 rails, speech-drift cognitive detection, HIPAA path)
+7. What's next (speech-drift cognitive detection, HIPAA path)
 
 Use concise, concrete language and evidence from live demo outputs.
 
@@ -223,12 +223,11 @@ Required regions:
    - Weekly summary card suitable for forwarding to a doctor.
 5) Doctor action panel
    - On concern events, show quick triage summary + cited brief preview.
-   - Support x402 unlock state for full cited brief.
 6) Operator/audit panel
    - Show patient_id, call_id, alert_id (if available), source mode (live vs fallback), and durable timestamps.
 
 Demo mode control:
-- Provide a single "Run Demo Sequence" control that can step through: call trigger -> dashboard update -> caregiver alert -> cited brief generation -> x402 unlock request.
+- Provide a single "Run Demo Sequence" control that can step through: call trigger -> dashboard update -> caregiver alert -> cited brief generation.
 
 ## Dashboard Acceptance Criteria (Mapped to User Stories)
 
@@ -245,7 +244,6 @@ Caregiver:
 Doctor:
 1) Concern flags (e.g., chest pain, dizziness) appear in doctor-facing alert panel immediately after ingestion.
 2) Cited brief preview appears for concern events and indicates source grounding mode.
-3) x402 gate clearly shows "locked/unlocked" state and unlock amount for full brief access.
 
 Clinic/Operator:
 1) Patient enrollment data fields match canonical Patient schema and require no patient-side app setup.
@@ -257,7 +255,6 @@ Judge demo beats:
 2) Show dashboard updating from persisted result in near real-time after call completion.
 3) Show physical-room alert evidence (SMS/email send proof state) for concern/missed threshold scenario.
 4) Show cited brief population with live web sources after concern.
-5) Show x402 payment request/unlock UI for doctor brief monetization.
 
 ## Known Integration Gotchas (Apr 2026)
 
@@ -283,10 +280,10 @@ When starting work on MediCall:
 Use these modules as the active implementation baseline:
 - `src/types.ts` for canonical Patient and CallResult schemas.
 - `src/routes/api.ts` for backend endpoints (health, patients, call results, Vapi outbound/webhook ingestion, pharmacology query, TinyFish FDA check, doctor briefs, weekly report).
-- `src/services/insforge.ts` for notification sending (mock mode + InsForge-ready HTTP integration).
+- `src/services/insforge.ts` for notification sending (live by default, optional mock mode via env flag).
 - `src/services/alerts.ts` for deterministic escalation logic.
 - `src/services/tinyfish.ts` for FDA RSS fetch + medication matching.
-- `src/services/vapi.ts` for outbound call initiation (real Vapi + mock fallback).
+- `src/services/vapi.ts` for outbound call initiation (real Vapi by default; mock only when explicitly enabled).
 - `src/services/pharmacology.ts` for drug-question detection and real-time answer generation.
 - `src/services/doctorBrief.ts` for concern-brief generation and `docs/cited.md` persistence.
 - `src/services/summary.ts` for plain-English weekly summary generation.
@@ -297,23 +294,23 @@ Use these modules as the active implementation baseline:
 Dashboard regions now shipped in `public/index.html`:
 - Topbar with live "System healthy" pulse + local clock.
 - Hero with primary "Run demo sequence" CTA and secondary "Weekly report".
-- Demo sequence progress strip (5 steps: call trigger → dashboard update → caregiver alert → cited brief → x402 unlock) that lights up beat-by-beat as the orchestrator runs against real endpoints.
+- Demo sequence progress strip (4 steps: call trigger → dashboard update → caregiver alert → cited brief) that lights up beat-by-beat as the orchestrator runs against real endpoints.
 - KPI rail (patients on watch, calls in last 24h, adherence %, escalations today) with escalation card turning warm when alerts fired.
 - Patients-on-watch roster with avatar + medication count + latest call status chip.
 - Call timeline (centerpiece) with filter chips (all/took/missed/no-answer/concern/escalated), transcript quotes, flag chips, `alert_sent` chip, and FDA context chip.
 - Agent pipeline strip with per-agent observable timestamps (spec: "observable, not narrated").
-- FDA safety monitor panel with source mode line (live vs `fallback_fixture`).
+- FDA safety monitor panel with live feed status line.
 - Weekly summary card (plain-English, caregiver-voiced).
-- Doctor action panel: urgent chip + triage one-liner + cited brief preview (serif-set with numbered sources) + x402 gate that flips from locked ($price / "Unlock full brief") to unlocked (green "Unlocked · full brief delivered" pill).
+- Doctor action panel: urgent chip + triage one-liner + cited brief preview (serif-set with numbered sources) for rapid clinical follow-up.
 - Operator audit panel at the bottom: monospace table of ISO timestamp, patient_id, call_id, status, alert_sent flag, and FDA source mode.
 
 Dashboard → backend endpoint contract (must stay in sync):
 - `GET /api/patients`, `GET /api/call-results` drive the live refresh every 8s.
-- `POST /api/vapi-outbound` + `POST /api/vapi-webhook` power both "Try random call" and the demo sequence's call-trigger/webhook beats.
-- `POST /api/doctor-briefs/generate/:callId` + `GET /api/doctor-briefs/latest/:patientId` drive the doctor action panel. Backend currently always returns `unlock_state: "locked"`; the dashboard handles the unlock transition client-side and toasts "x402 settled · full brief unlocked".
-- `GET /api/tinyfish/fda-alerts/:patientId` powers the FDA monitor; its `source: "fallback_fixture"` signal is surfaced in both the FDA panel and the operator audit table.
+- `POST /api/vapi-outbound` + `POST /api/vapi-webhook` power both "Try random call" and the demo sequence's real-call/webhook beats.
+- `POST /api/doctor-briefs/generate/:callId` + `GET /api/doctor-briefs/latest/:patientId` drive the doctor action panel.
+- `GET /api/tinyfish/fda-alerts/:patientId` powers the FDA monitor with live FDA RSS matching.
 - `GET /api/reports/weekly/:patientId` powers the weekly summary card.
 
 Demo fallback currently implemented:
-- If FDA feed fetch fails, API returns static metformin fixture payload with `source: "fallback_fixture"` and the dashboard audit column shows `fallback`.
-- If Vapi outbound is unavailable or `USE_MOCK_VAPI=true`, outbound route issues mock call IDs and supports webhook-driven simulated completion — the demo sequence uses this mock path by design so it never blocks on a real telco.
+- If FDA feed fetch fails, API returns a non-200 error and the dashboard shows a live-feed failure state.
+- If Vapi outbound fails, API returns an error (no silent synthetic call fallback in live mode).

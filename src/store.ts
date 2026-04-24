@@ -8,7 +8,7 @@ const seedPatients: Patient[] = [
   {
     patient_id: "11111111-1111-4111-8111-111111111111",
     name: "Margaret Ellis",
-    phone: "+14155550101",
+    phone: "+14086740311",
     medications: ["Metformin", "Lisinopril", "Atorvastatin"],
     caregiver_phone: "+14155550999",
     caregiver_email: "daughter@example.com",

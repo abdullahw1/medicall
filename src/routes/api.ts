@@ -166,8 +166,15 @@ apiRouter.post("/call-results", async (req, res) => {
 });
 
 apiRouter.post("/vapi-outbound", async (req, res) => {
+  let payload: ReturnType<typeof vapiOutboundRequestSchema.parse>;
   try {
-    const payload = vapiOutboundRequestSchema.parse(req.body);
+    payload = vapiOutboundRequestSchema.parse(req.body);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ error: "Invalid vapi outbound payload" });
+  }
+
+  try {
     const patient = getPatient(payload.patient_id);
     if (!patient) {
       return res.status(404).json({ error: "Patient not found" });
@@ -199,7 +206,10 @@ apiRouter.post("/vapi-outbound", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.status(400).json({ error: "Invalid vapi outbound payload" });
+    return res.status(502).json({
+      error: "Unable to initiate live Vapi outbound call",
+      details: String(error),
+    });
   }
 });
 
@@ -315,13 +325,11 @@ apiRouter.get("/tinyfish/fda-alerts/:patientId", async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.json({
+    return res.status(502).json({
+      error: "Unable to fetch live FDA alerts",
       patient_id: patient.patient_id,
-      matched_count: 1,
-      source: "fallback_fixture",
-      alerts: [
-        "Metformin extended-release tablets recalled due to contamination risk (static demo fixture).",
-      ],
+      matched_count: 0,
+      alerts: [],
     });
   }
 });
