@@ -2503,7 +2503,14 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ patient_id: patient.patient_id }),
           });
-          if (!outbound.ok) throw new Error("outbound failed");
+          if (!outbound.ok) {
+            let detail = "outbound failed";
+            try {
+              const payload = await outbound.json();
+              detail = payload.details || payload.error || detail;
+            } catch {}
+            throw new Error(detail);
+          }
           const outboundPayload = await outbound.json();
           setDemoStep(1, "done");
           setTriggerStage(0, "done");
@@ -2545,7 +2552,7 @@
           el.triggerModeChip.querySelector("span:last-child").textContent = "Completed";
         } catch (e) {
           el.demoStripLabel.textContent = "Demo sequence failed";
-          toast("Demo sequence failed", "bad");
+          toast(`Demo sequence failed: ${e?.message || "unknown error"}`, "bad");
           el.triggerModeChip.querySelector("span:last-child").textContent = "Failed";
         } finally {
           state.demoRunning = false;
@@ -2636,7 +2643,12 @@
           });
 
           if (!outbound.ok) {
-            throw new Error("Outbound call initiation failed");
+            let detail = "Outbound call initiation failed";
+            try {
+              const payload = await outbound.json();
+              detail = payload.details || payload.error || detail;
+            } catch {}
+            throw new Error(detail);
           }
           const outboundPayload = await outbound.json();
           setTriggerStage(0, "done");
@@ -2654,7 +2666,7 @@
           el.triggerModeChip.querySelector("span:last-child").textContent = "Completed";
         } catch (e) {
           el.triggerModeChip.querySelector("span:last-child").textContent = "Failed";
-          toast("Live call failed", "bad");
+          toast(`Live call failed: ${e?.message || "unknown error"}`, "bad");
         } finally {
           state.triggerRunning = false;
         }

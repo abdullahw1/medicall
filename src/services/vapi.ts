@@ -74,7 +74,16 @@ const startLiveCall = async (
   });
 
   if (!response.ok) {
-    throw new Error(`Vapi outbound failed (${response.status})`);
+    let detail = "";
+    try {
+      const payload = (await response.json()) as { message?: string; error?: string };
+      detail = payload.message ?? payload.error ?? "";
+    } catch {
+      detail = await response.text().catch(() => "");
+    }
+    throw new Error(
+      `Vapi outbound failed (${response.status})${detail ? `: ${detail}` : ""}`,
+    );
   }
 
   const payload = (await response.json()) as { id?: string; callId?: string };
