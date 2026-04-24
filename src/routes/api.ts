@@ -12,9 +12,13 @@ import { buildWeeklySummary } from "../services/summary.js";
 import { fetchFdaAlertsForPatient } from "../services/tinyfish.js";
 import { startOutboundCall } from "../services/vapi.js";
 import {
+  acknowledgeAlert,
   addDoctorBrief,
+  addAlertRecord,
   addCallResult,
   addVapiCallContext,
+  getAllAlerts,
+  getAlertByCallId,
   getCallResultById,
   getDoctorBriefByCallId,
   getAllCallResults,
@@ -57,11 +61,40 @@ const persistCallResult = async (
 
   addCallResult(result);
   if (escalate) {
-    await sendCaregiverAndDoctorAlert(patient, result);
+    const deliveries = await sendCaregiverAndDoctorAlert(patient, result);
+    addAlertRecord({
+      alert_id: randomUUID(),
+      call_id: result.call_id,
+      patient_id: result.patient_id,
+      created_at: new Date().toISOString(),
+      acknowledged: false,
+      acknowledged_at: null,
+      deliveries,
+    });
   }
 
   return { result, patient };
 };
+
+apiRouter.get("/alerts", (req, res) => {
+  const patientId = req.query.patient_id;
+  const records = getAllAlerts().filter((record) => {
+    if (typeof patientId === "string" && record.patient_id !== patientId) {
+      return false;
+    }
+    return true;
+  });
+  return res.json(records);
+});
+
+apiRouter.post("/alerts/:callId/acknowledge", (req, res) => {
+  const existing = getAlertByCallId(req.params.callId);
+  if (!existing) {
+    return res.status(404).json({ error: "Alert not found" });
+  }
+  const updated = acknowledgeAlert(req.params.callId);
+  return res.json(updated);
+});
 
 apiRouter.post("/run-pipeline", async (req, res) => {
   try {

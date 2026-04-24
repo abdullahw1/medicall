@@ -1,7 +1,7 @@
 import { config } from "../config.js";
-import { CallResult, Patient } from "../types.js";
+import { AlertDelivery, CallResult, Patient } from "../types.js";
 
-type NotificationChannel = "email";
+type NotificationChannel = "email" | "sms";
 
 const sendMockNotification = async (
   channel: NotificationChannel,
@@ -67,6 +67,9 @@ const sendNotification = async (
   recipient: string,
   message: string,
 ): Promise<void> => {
+  if (channel === "sms" && !config.useMockNotifications) {
+    throw new Error("SMS delivery channel not configured in this build");
+  }
   if (config.useMockNotifications) {
     await sendMockNotification(channel, recipient, message);
     return;
@@ -74,10 +77,49 @@ const sendNotification = async (
   await sendInsForgeNotification(channel, recipient, message);
 };
 
+const runDelivery = async (
+  channel: NotificationChannel,
+  recipient: string,
+  target: "caregiver" | "doctor",
+  message: string,
+): Promise<AlertDelivery> => {
+  const timestamp = new Date().toISOString();
+  if (channel === "sms" && !config.useMockNotifications) {
+    return {
+      channel,
+      recipient,
+      target,
+      status: "skipped",
+      detail: "sms_channel_not_configured",
+      timestamp,
+    };
+  }
+
+  try {
+    await sendNotification(channel, recipient, message);
+    return {
+      channel,
+      recipient,
+      target,
+      status: "sent",
+      timestamp,
+    };
+  } catch (error) {
+    return {
+      channel,
+      recipient,
+      target,
+      status: "failed",
+      detail: String(error),
+      timestamp,
+    };
+  }
+};
+
 export const sendCaregiverAndDoctorAlert = async (
   patient: Patient,
   callResult: CallResult,
-): Promise<void> => {
+): Promise<AlertDelivery[]> => {
   const message = [
     `MediCall alert for ${patient.name}.`,
     `Status: ${callResult.status}.`,
@@ -87,9 +129,10 @@ export const sendCaregiverAndDoctorAlert = async (
     .filter(Boolean)
     .join(" ");
 
-  await Promise.all([
-    sendNotification("email", patient.caregiver_email, message),
-    sendNotification("email", patient.doctor_email, message),
+  return Promise.all([
+    runDelivery("email", patient.caregiver_email, "caregiver", message),
+    runDelivery("email", patient.doctor_email, "doctor", message),
+    runDelivery("sms", patient.caregiver_phone, "caregiver", message),
   ]);
 };
 

@@ -297,7 +297,10 @@ Dashboard regions now shipped in `public/index.html`:
 - Demo sequence progress strip (4 steps: call trigger → dashboard update → caregiver alert → cited brief) that lights up beat-by-beat as the orchestrator runs against real endpoints.
 - KPI rail (patients on watch, calls in last 24h, adherence %, escalations today) with escalation card turning warm when alerts fired.
 - Patients-on-watch roster with avatar + medication count + latest call status chip.
+- Click-to-focus patient detail module with per-patient streak, 30-day escalation count, latest status, and isolated recent call history.
 - Call timeline (centerpiece) with filter chips (all/took/missed/no-answer/concern/escalated), transcript quotes, flag chips, `alert_sent` chip, and FDA context chip.
+- Dedicated alert panel with unresolved-vs-acknowledged workflow and channel breakdown (email/sms/failures) plus acknowledge actions.
+- Guild trigger panel that centralizes live call controls and visualizes `calling -> STT -> LLM -> webhook -> persisted` stage progression for both live call and judge sequence triggers.
 - Agent pipeline strip with per-agent observable timestamps (spec: "observable, not narrated").
 - FDA safety monitor panel with live feed status line.
 - Weekly summary card (plain-English, caregiver-voiced).
@@ -306,6 +309,7 @@ Dashboard regions now shipped in `public/index.html`:
 
 Dashboard → backend endpoint contract (must stay in sync):
 - `GET /api/patients`, `GET /api/call-results` drive the live refresh every 8s.
+- `GET /api/alerts` and `POST /api/alerts/:callId/acknowledge` power alert triage state and acknowledgement UX.
 - `POST /api/vapi-outbound` + `POST /api/vapi-webhook` power both "Try random call" and the demo sequence's real-call/webhook beats.
 - `POST /api/doctor-briefs/generate/:callId` + `GET /api/doctor-briefs/latest/:patientId` drive the doctor action panel.
 - `GET /api/tinyfish/fda-alerts/:patientId` powers the FDA monitor with live FDA RSS matching.

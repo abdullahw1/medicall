@@ -45,6 +45,27 @@ export const pharmacologyQuerySchema = z.object({
   question: z.string().min(3),
 });
 
+export const alertDeliverySchema = z.object({
+  channel: z.enum(["email", "sms"]),
+  recipient: z.string().min(3),
+  target: z.enum(["caregiver", "doctor"]),
+  status: z.enum(["sent", "failed", "skipped"]),
+  detail: z.string().optional(),
+  timestamp: z.string(),
+});
+
+export const alertRecordSchema = z.object({
+  alert_id: z.string().uuid(),
+  call_id: z.string().uuid(),
+  patient_id: z.string().uuid(),
+  created_at: z.string(),
+  acknowledged: z.boolean(),
+  acknowledged_at: z.string().nullable(),
+  deliveries: z.array(alertDeliverySchema),
+});
+
 export type Patient = z.infer<typeof patientSchema>;
 export type CallResult = z.infer<typeof callResultSchema>;
+export type AlertDelivery = z.infer<typeof alertDeliverySchema>;
+export type AlertRecord = z.infer<typeof alertRecordSchema>;
 

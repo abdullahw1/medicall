@@ -468,6 +468,9 @@
       .roster li:hover {
         background: var(--bg-elev);
       }
+      .roster li.active {
+        background: rgba(14, 81, 72, 0.08);
+      }
       .avatar {
         width: 44px;
         height: 44px;
@@ -508,6 +511,137 @@
         font-family: var(--font-mono);
         font-size: 11px;
         color: var(--faint);
+      }
+
+      .patient-detail {
+        margin-top: 16px;
+      }
+      .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .detail-stat {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+        background: var(--bg-elev);
+      }
+      .detail-stat small {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .detail-stat strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--ink);
+      }
+      .detail-history {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .detail-history-item {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+      }
+      .detail-history-item .head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .detail-history-item p {
+        margin: 8px 0 0;
+        font-size: 12px;
+        color: var(--ink-soft);
+      }
+
+      .trigger-panel {
+        margin-bottom: 16px;
+      }
+      .trigger-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .trigger-pipeline {
+        margin-top: 12px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 8px;
+      }
+      .trigger-stage {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px;
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .trigger-stage.running {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .trigger-stage.done {
+        border-color: var(--good);
+        color: var(--good);
+        background: rgba(15, 138, 95, 0.08);
+      }
+
+      .alerts-panel {
+        margin-top: 16px;
+      }
+      .alert-stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .alert-stat {
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px;
+        background: var(--bg-elev);
+      }
+      .alert-stat small {
+        display: block;
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .alert-stat strong {
+        font-size: 16px;
+        color: var(--ink);
+      }
+      .alerts-list {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .alert-item {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px;
+      }
+      .alert-item .meta {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .alert-delivery {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
       }
 
       /* ── Call timeline ─────────────────────────────────────────── */
@@ -1103,9 +1237,6 @@
         </div>
         <div class="hero-actions">
           <button class="btn" id="trigger-weekly">Weekly report</button>
-          <button class="btn primary" id="trigger-demo">
-            <span>▶</span> Run demo sequence
-          </button>
         </div>
       </section>
 
@@ -1186,6 +1317,39 @@
             <ul class="roster" id="roster"></ul>
           </section>
 
+          <section class="card patient-detail" aria-label="Patient detail view">
+            <div class="card-head">
+              <div class="card-title">
+                <span id="detail-title">Patient detail</span>
+                <span class="eyebrow">Profile + call history</span>
+              </div>
+              <button class="btn ghost" id="detail-clear">Clear</button>
+            </div>
+            <div style="padding: 0 18px 12px">
+              <div class="detail-grid">
+                <div class="detail-stat">
+                  <small>Adherence streak</small>
+                  <strong id="detail-streak">—</strong>
+                </div>
+                <div class="detail-stat">
+                  <small>Escalations (30d)</small>
+                  <strong id="detail-escalations">—</strong>
+                </div>
+                <div class="detail-stat">
+                  <small>Latest status</small>
+                  <strong id="detail-status">—</strong>
+                </div>
+                <div class="detail-stat">
+                  <small>Medication count</small>
+                  <strong id="detail-meds">—</strong>
+                </div>
+              </div>
+              <div class="detail-history" id="detail-history">
+                <div class="empty">Select a patient from the roster.</div>
+              </div>
+            </div>
+          </section>
+
           <section class="card" aria-label="Call timeline">
             <div class="card-head">
               <div class="card-title">
@@ -1193,9 +1357,6 @@
                 <span class="eyebrow">Vapi webhook</span>
               </div>
               <div style="display: flex; gap: 6px">
-                <button class="btn ghost" id="trigger-call" title="Log a random call outcome">
-                  + Try random call
-                </button>
                 <button class="btn ghost" id="refresh-calls" title="Refresh">
                   ⟳ Refresh
                 </button>
@@ -1227,6 +1388,36 @@
 
         <!-- ── Right column ───────────────────────────────────── -->
         <div class="col">
+          <section class="card trigger-panel" aria-label="Guild trigger panel">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Guild trigger panel</span>
+                <span class="eyebrow">Live call execution</span>
+              </div>
+              <span class="chip" id="trigger-mode-chip">
+                <span class="chip-dot"></span>
+                <span>Idle</span>
+              </span>
+            </div>
+            <div style="padding: 0 18px 14px">
+              <div class="trigger-actions">
+                <button class="btn primary" id="trigger-call-live">
+                  ▶ Run live call
+                </button>
+                <button class="btn ghost" id="trigger-demo">
+                  Run judge sequence
+                </button>
+              </div>
+              <div class="trigger-pipeline">
+                <div class="trigger-stage" id="trigger-stage-calling">Calling</div>
+                <div class="trigger-stage" id="trigger-stage-stt">STT</div>
+                <div class="trigger-stage" id="trigger-stage-llm">LLM</div>
+                <div class="trigger-stage" id="trigger-stage-webhook">Webhook</div>
+                <div class="trigger-stage" id="trigger-stage-persisted">Persisted</div>
+              </div>
+            </div>
+          </section>
+
           <section class="card" aria-label="Agent pipeline">
             <div class="card-head">
               <div class="card-title">
@@ -1359,6 +1550,27 @@
               Generating summary for the last 7 days…
             </p>
             <div class="summary-meta" id="summary-meta">—</div>
+          </section>
+
+          <section class="card alerts-panel" aria-label="Alert panel">
+            <div class="card-head">
+              <div class="card-title">
+                <span>Alerts</span>
+                <span class="eyebrow">Acknowledge + delivery channels</span>
+              </div>
+              <button class="btn ghost" id="alerts-refresh">Refresh</button>
+            </div>
+            <div style="padding: 0 18px 14px">
+              <div class="alert-stats">
+                <div class="alert-stat"><small>Unresolved</small><strong id="alerts-unresolved">0</strong></div>
+                <div class="alert-stat"><small>Email sent</small><strong id="alerts-email">0</strong></div>
+                <div class="alert-stat"><small>SMS sent</small><strong id="alerts-sms">0</strong></div>
+                <div class="alert-stat"><small>Failures</small><strong id="alerts-failed">0</strong></div>
+              </div>
+              <div class="alerts-list" id="alerts-list">
+                <div class="empty">No escalations yet.</div>
+              </div>
+            </div>
           </section>
 
           <!-- Doctor action panel. Triage banner leads with a
@@ -1508,8 +1720,22 @@
         kpiAlertCard: $("#kpi-alert-card"),
         rosterCount: $("#roster-count"),
         roster: $("#roster"),
+        detailTitle: $("#detail-title"),
+        detailClear: $("#detail-clear"),
+        detailStreak: $("#detail-streak"),
+        detailEscalations: $("#detail-escalations"),
+        detailStatus: $("#detail-status"),
+        detailMeds: $("#detail-meds"),
+        detailHistory: $("#detail-history"),
         timeline: $("#timeline"),
         filterRow: $("#filter-row"),
+        triggerModeChip: $("#trigger-mode-chip"),
+        triggerStageCalling: $("#trigger-stage-calling"),
+        triggerStageStt: $("#trigger-stage-stt"),
+        triggerStageLlm: $("#trigger-stage-llm"),
+        triggerStageWebhook: $("#trigger-stage-webhook"),
+        triggerStagePersisted: $("#trigger-stage-persisted"),
+        triggerCallLive: $("#trigger-call-live"),
         agentFda: $("#agent-fda-status"),
         agentCall: $("#agent-call-status"),
         agentPharma: $("#agent-pharma-status"),
@@ -1536,6 +1762,12 @@
         briefSources: $("#brief-sources"),
         briefCitations: $("#brief-citations"),
         briefGenerate: $("#brief-generate"),
+        alertsUnresolved: $("#alerts-unresolved"),
+        alertsEmail: $("#alerts-email"),
+        alertsSms: $("#alerts-sms"),
+        alertsFailed: $("#alerts-failed"),
+        alertsList: $("#alerts-list"),
+        alertsRefresh: $("#alerts-refresh"),
         auditRows: $("#audit-rows"),
         auditCount: $("#audit-count"),
         demoStrip: $("#demo-strip"),
@@ -1548,11 +1780,14 @@
       const state = {
         patients: [],
         calls: [],
+        alerts: [],
+        selectedPatientId: null,
         filter: "all",
         lastFdaRun: null,
         fdaPayload: null,
         latestBrief: null,
         demoRunning: false,
+        triggerRunning: false,
       };
 
       /* ── Pure helpers ────────────────────────────────────────── */
@@ -1586,6 +1821,36 @@
           hour: "numeric",
           minute: "2-digit",
         });
+
+      const selectedPatient = () =>
+        state.patients.find((p) => p.patient_id === state.selectedPatientId) ??
+        state.patients[0] ??
+        null;
+
+      const callsForPatient = (patientId) =>
+        state.calls.filter((c) => c.patient_id === patientId);
+
+      const computeAdherenceStreak = (patientId) => {
+        const daily = new Map();
+        for (const call of callsForPatient(patientId)) {
+          const day = new Date(call.timestamp).toISOString().slice(0, 10);
+          if (!daily.has(day)) {
+            daily.set(day, call.status);
+          }
+        }
+        const days = Array.from(daily.entries()).sort((a, b) =>
+          a[0] > b[0] ? -1 : 1,
+        );
+        let streak = 0;
+        for (const [, status] of days) {
+          if (status === "took_meds") {
+            streak += 1;
+            continue;
+          }
+          break;
+        }
+        return streak;
+      };
 
       const toast = (msg, variant = "") => {
         const node = document.createElement("div");
@@ -1674,6 +1939,7 @@
         const frag = document.createDocumentFragment();
         for (const p of patients) {
           const latest = calls.find((c) => c.patient_id === p.patient_id);
+          const streak = computeAdherenceStreak(p.patient_id);
           const meta = latest
             ? statusMeta[latest.status] || {
                 label: latest.status,
@@ -1682,12 +1948,18 @@
             : null;
 
           const li = document.createElement("li");
+          li.dataset.patientId = p.patient_id;
+          if (state.selectedPatientId === p.patient_id) {
+            li.classList.add("active");
+          }
           li.innerHTML = `
             <div class="avatar" aria-hidden="true">${initialsOf(p.name)}</div>
             <div>
               <div class="roster-name">${p.name}</div>
               <div class="roster-meta">
                 <span>${p.medications.length} meds</span>
+                <span>·</span>
+                <span>${streak}d streak</span>
                 <span>·</span>
                 <span>${p.call_time} ${p.timezone
                   .split("/")[1]
@@ -1720,6 +1992,9 @@
       /* ── Timeline ────────────────────────────────────────────── */
       const renderTimeline = () => {
         const calls = state.calls.filter((c) => {
+          if (state.selectedPatientId && c.patient_id !== state.selectedPatientId) {
+            return false;
+          }
           if (state.filter === "all") return true;
           if (state.filter === "escalated") return c.alert_sent;
           return c.status === state.filter;
@@ -1732,6 +2007,7 @@
 
         const frag = document.createDocumentFragment();
         for (const c of calls.slice(0, 20)) {
+          const patient = state.patients.find((p) => p.patient_id === c.patient_id);
           const meta = statusMeta[c.status] || {
             label: c.status,
             chip: "",
@@ -1760,6 +2036,7 @@
             <div class="event-head">
               <span class="chip ${meta.chip}"><span class="chip-dot"></span>${meta.label}</span>
               ${alertChip}
+              <span class="chip">${escapeHtml(patient?.name ?? c.patient_id.slice(0, 8))}</span>
               <span class="event-time">${fmtTime(c.timestamp)} · ${timeAgo(
                 c.timestamp,
               )}</span>
@@ -1771,6 +2048,118 @@
           frag.appendChild(node);
         }
         el.timeline.replaceChildren(frag);
+      };
+
+      const renderPatientDetail = () => {
+        const patient = selectedPatient();
+        if (!patient) {
+          el.detailTitle.textContent = "Patient detail";
+          el.detailStreak.textContent = "—";
+          el.detailEscalations.textContent = "—";
+          el.detailStatus.textContent = "—";
+          el.detailMeds.textContent = "—";
+          el.detailHistory.innerHTML = `<div class="empty">Select a patient from the roster.</div>`;
+          return;
+        }
+
+        const history = callsForPatient(patient.patient_id);
+        const latest = history[0];
+        const escalations30d = history.filter(
+          (c) =>
+            c.alert_sent &&
+            Date.now() - new Date(c.timestamp).getTime() <= 30 * 24 * 60 * 60 * 1000,
+        ).length;
+
+        el.detailTitle.textContent = `${patient.name} · detail`;
+        el.detailStreak.textContent = `${computeAdherenceStreak(patient.patient_id)} day(s)`;
+        el.detailEscalations.textContent = `${escalations30d}`;
+        el.detailStatus.textContent = latest
+          ? (statusMeta[latest.status]?.label ?? latest.status)
+          : "Awaiting first call";
+        el.detailMeds.textContent = `${patient.medications.length}`;
+
+        if (history.length === 0) {
+          el.detailHistory.innerHTML = `<div class="empty">No calls for this patient yet.</div>`;
+          return;
+        }
+
+        el.detailHistory.innerHTML = history.slice(0, 6).map((call) => {
+          const label = statusMeta[call.status]?.label ?? call.status;
+          return `
+            <div class="detail-history-item">
+              <div class="head">
+                <span class="chip">${label}</span>
+                <span class="event-time">${fmtTime(call.timestamp)} · ${timeAgo(call.timestamp)}</span>
+              </div>
+              <p>${escapeHtml(call.transcript || "—")}</p>
+            </div>
+          `;
+        }).join("");
+      };
+
+      const renderAlerts = () => {
+        const alerts = state.selectedPatientId
+          ? state.alerts.filter((a) => a.patient_id === state.selectedPatientId)
+          : state.alerts;
+        const unresolved = alerts.filter((a) => !a.acknowledged).length;
+        const emailSent = alerts.flatMap((a) => a.deliveries ?? []).filter(
+          (d) => d.channel === "email" && d.status === "sent",
+        ).length;
+        const smsSent = alerts.flatMap((a) => a.deliveries ?? []).filter(
+          (d) => d.channel === "sms" && d.status === "sent",
+        ).length;
+        const failures = alerts.flatMap((a) => a.deliveries ?? []).filter(
+          (d) => d.status === "failed",
+        ).length;
+
+        el.alertsUnresolved.textContent = String(unresolved);
+        el.alertsEmail.textContent = String(emailSent);
+        el.alertsSms.textContent = String(smsSent);
+        el.alertsFailed.textContent = String(failures);
+
+        if (alerts.length === 0) {
+          el.alertsList.innerHTML = `<div class="empty">No escalations yet.</div>`;
+          return;
+        }
+
+        el.alertsList.innerHTML = alerts.slice(0, 8).map((alert) => {
+          const patient = state.patients.find((p) => p.patient_id === alert.patient_id);
+          const deliveryChips = (alert.deliveries ?? []).map((delivery) => {
+            const chipClass =
+              delivery.status === "sent" ? "good" :
+              delivery.status === "failed" ? "bad" : "";
+            return `<span class="chip ${chipClass}">${delivery.channel} · ${delivery.status}</span>`;
+          }).join("");
+          const ackButton = alert.acknowledged
+            ? `<span class="chip good"><span class="chip-dot"></span>Acknowledged</span>`
+            : `<button class="btn ghost alert-ack" data-call-id="${alert.call_id}">Acknowledge</button>`;
+          return `
+            <div class="alert-item">
+              <div class="meta">${new Date(alert.created_at).toISOString()} · ${escapeHtml(patient?.name ?? alert.patient_id.slice(0, 8))}</div>
+              <div class="alert-delivery">${deliveryChips}</div>
+              <div style="margin-top: 8px">${ackButton}</div>
+            </div>
+          `;
+        }).join("");
+      };
+
+      const triggerStages = [
+        el.triggerStageCalling,
+        el.triggerStageStt,
+        el.triggerStageLlm,
+        el.triggerStageWebhook,
+        el.triggerStagePersisted,
+      ];
+
+      const resetTriggerStages = () => {
+        triggerStages.forEach((stage) => stage.classList.remove("running", "done"));
+      };
+
+      const setTriggerStage = (index, status) => {
+        const node = triggerStages[index];
+        if (!node) return;
+        node.classList.remove("running", "done");
+        if (status) node.classList.add(status);
       };
 
       const escapeHtml = (s) =>
@@ -1828,7 +2217,7 @@
 
       /* ── Weekly summary ──────────────────────────────────────── */
       const loadWeeklySummary = async () => {
-        const patient = state.patients[0];
+        const patient = selectedPatient();
         if (!patient) return;
         try {
           const r = await fetch(
@@ -1850,13 +2239,17 @@
              "Generate brief" prompts the operator
            - Brief exists → full triage + cited preview */
       const latestConcernCall = () =>
-        state.calls.find((c) => c.status === "concern") ?? null;
+        state.calls.find(
+          (c) =>
+            c.status === "concern" &&
+            (!state.selectedPatientId || c.patient_id === state.selectedPatientId),
+        ) ?? null;
 
       const renderDoctorBrief = (brief) => {
         state.latestBrief = brief ?? null;
 
         const concern = latestConcernCall();
-        const patient = state.patients[0];
+        const patient = selectedPatient();
 
         const hasAnything = Boolean(brief) || Boolean(concern);
         el.doctorEmpty.style.display = hasAnything ? "none" : "";
@@ -1952,7 +2345,7 @@
       };
 
       const loadLatestDoctorBrief = async () => {
-        const patient = state.patients[0];
+        const patient = selectedPatient();
         if (!patient) return;
         try {
           const response = await fetch(
@@ -2086,13 +2479,16 @@
       };
 
       const runDemoSequence = async () => {
-        const patient = state.patients[0];
+        const patient = selectedPatient();
         if (!patient) {
           toast("No patients loaded", "bad");
           return;
         }
         if (state.demoRunning) return;
         state.demoRunning = true;
+        state.triggerRunning = true;
+        el.triggerModeChip.querySelector("span:last-child").textContent = "Running";
+        resetTriggerStages();
 
         el.demoStrip.classList.add("visible");
         el.demoStripLabel.textContent = "Running demo sequence…";
@@ -2101,6 +2497,7 @@
         try {
           // Step 1 — outbound call trigger.
           setDemoStep(1, "active");
+          setTriggerStage(0, "running");
           const outbound = await fetch("/api/vapi-outbound", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2109,12 +2506,19 @@
           if (!outbound.ok) throw new Error("outbound failed");
           const outboundPayload = await outbound.json();
           setDemoStep(1, "done");
+          setTriggerStage(0, "done");
           await demoDelay(450);
 
           // Step 2 — wait for real webhook persistence and refresh.
           setDemoStep(2, "active");
+          setTriggerStage(1, "running");
           const callResult = await waitForCallResult(outboundPayload.call_id);
+          setTriggerStage(1, "done");
+          setTriggerStage(2, "done");
+          setTriggerStage(3, "done");
+          setTriggerStage(4, "running");
           await refresh();
+          setTriggerStage(4, "done");
           setDemoStep(2, "done");
           await demoDelay(450);
 
@@ -2138,17 +2542,20 @@
           setDemoStep(4, "done");
 
           el.demoStripLabel.textContent = "Demo sequence complete";
+          el.triggerModeChip.querySelector("span:last-child").textContent = "Completed";
         } catch (e) {
           el.demoStripLabel.textContent = "Demo sequence failed";
           toast("Demo sequence failed", "bad");
+          el.triggerModeChip.querySelector("span:last-child").textContent = "Failed";
         } finally {
           state.demoRunning = false;
+          state.triggerRunning = false;
         }
       };
 
       /* ── FDA run ─────────────────────────────────────────────── */
       const runFdaMatch = async () => {
-        const patient = state.patients[0];
+        const patient = selectedPatient();
         if (!patient) {
           toast("No patients loaded", "bad");
           return;
@@ -2211,40 +2618,15 @@
         }
       };
 
-      /* ── Manual call trigger (demo path) ─────────────────────── */
+      /* ── Live call trigger with pipeline stages ─────────────── */
       const runMorningCall = async () => {
-        const patient = state.patients[0];
+        const patient = selectedPatient();
         if (!patient) return toast("No patients loaded", "bad");
-
-        el.agentCall.textContent = "Calling…";
-        el.agentCall.className = "agent-status triggered";
-
-        const scenarios = [
-          {
-            status: "took_meds",
-            transcript:
-              "Yes, I took all my morning pills with toast and coffee.",
-            flags: [],
-          },
-          {
-            status: "missed_meds",
-            transcript:
-              "I think I forgot the blue one. I'll take it after I talk to you.",
-            flags: [],
-          },
-          {
-            status: "concern",
-            transcript:
-              "I feel a little dizzy this morning, and my chest has been tight.",
-            flags: ["dizziness", "chest_pain"],
-          },
-          {
-            status: "no_answer",
-            transcript: "(No response after 4 rings.)",
-            flags: [],
-          },
-        ];
-        const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
+        if (state.triggerRunning) return;
+        state.triggerRunning = true;
+        el.triggerModeChip.querySelector("span:last-child").textContent = "Running";
+        resetTriggerStages();
+        setTriggerStage(0, "running");
 
         try {
           const outbound = await fetch("/api/vapi-outbound", {
@@ -2257,44 +2639,48 @@
             throw new Error("Outbound call initiation failed");
           }
           const outboundPayload = await outbound.json();
-
-          const webhook = await fetch("/api/vapi-webhook", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              call_id: outboundPayload.call_id,
-              transcript: pick.transcript,
-              call_status: pick.status === "no_answer" ? "no_answer" : "completed",
-            }),
-          });
-          const webhookPayload = await webhook.json();
-          const result = webhookPayload.result ?? webhookPayload;
-
-          if (result.alert_sent) {
-            toast(`Escalated to caregiver · ${pick.status}`, "bad");
-          } else {
-            toast(`Call logged · ${pick.status}`, "good");
-          }
+          setTriggerStage(0, "done");
+          setTriggerStage(1, "running");
+          const result = await waitForCallResult(outboundPayload.call_id, 180000);
+          setTriggerStage(1, "done");
+          setTriggerStage(2, "done");
+          setTriggerStage(3, "done");
+          setTriggerStage(4, "running");
           await refresh();
+          setTriggerStage(4, "done");
+
+          if (result.alert_sent) toast("Escalation persisted from live call", "bad");
+          else toast(`Live call persisted · ${result.status}`, "good");
+          el.triggerModeChip.querySelector("span:last-child").textContent = "Completed";
         } catch (e) {
-          toast("Call failed", "bad");
+          el.triggerModeChip.querySelector("span:last-child").textContent = "Failed";
+          toast("Live call failed", "bad");
+        } finally {
+          state.triggerRunning = false;
         }
       };
 
       /* ── Data fetch & refresh ────────────────────────────────── */
       const refresh = async () => {
         try {
-          const [pR, cR] = await Promise.all([
+          const [pR, cR, aR] = await Promise.all([
             fetch("/api/patients"),
             fetch("/api/call-results"),
+            fetch("/api/alerts"),
           ]);
-          if (!pR.ok || !cR.ok) throw new Error("network");
+          if (!pR.ok || !cR.ok || !aR.ok) throw new Error("network");
           state.patients = await pR.json();
           state.calls = await cR.json();
+          state.alerts = await aR.json();
+          if (!state.selectedPatientId && state.patients.length) {
+            state.selectedPatientId = state.patients[0].patient_id;
+          }
           el.healthLabel.textContent = "System healthy";
           renderKpis();
           renderRoster();
+          renderPatientDetail();
           renderTimeline();
+          renderAlerts();
           renderAgents();
           renderAgentTimestamps();
           renderAudit();
@@ -2320,8 +2706,46 @@
         refresh();
         toast("Refreshed");
       });
+      el.roster.addEventListener("click", (e) => {
+        const item = e.target.closest("li[data-patient-id]");
+        if (!item) return;
+        state.selectedPatientId = item.dataset.patientId;
+        renderRoster();
+        renderPatientDetail();
+        renderTimeline();
+        renderAlerts();
+        loadWeeklySummary();
+        loadLatestDoctorBrief();
+      });
+      el.detailClear.addEventListener("click", () => {
+        state.selectedPatientId = state.patients[0]?.patient_id ?? null;
+        renderRoster();
+        renderPatientDetail();
+        renderTimeline();
+        renderAlerts();
+      });
+      el.alertsRefresh.addEventListener("click", () => refresh());
+      el.alertsList.addEventListener("click", async (e) => {
+        const btn = e.target.closest(".alert-ack");
+        if (!btn) return;
+        const callId = btn.dataset.callId;
+        if (!callId) return;
+        btn.disabled = true;
+        try {
+          const response = await fetch(`/api/alerts/${callId}/acknowledge`, {
+            method: "POST",
+          });
+          if (!response.ok) throw new Error("ack failed");
+          await refresh();
+          toast("Alert acknowledged", "good");
+        } catch {
+          toast("Unable to acknowledge alert", "bad");
+        } finally {
+          btn.disabled = false;
+        }
+      });
       $("#fda-run").addEventListener("click", runFdaMatch);
-      $("#trigger-call").addEventListener("click", runMorningCall);
+      el.triggerCallLive.addEventListener("click", runMorningCall);
       $("#trigger-weekly").addEventListener("click", loadWeeklySummary);
       $("#summary-refresh").addEventListener("click", loadWeeklySummary);
       $("#brief-generate").addEventListener("click", generateDoctorBrief);
