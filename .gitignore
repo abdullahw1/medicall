@@ -7,3 +7,10 @@ __pycache__/
 node_modules/
 dist/
 .env
+
+# Guild.ai build artifacts
+guild-agent/dist/
+guild-agent/node_modules/
+
+# OS
+.DS_Store
