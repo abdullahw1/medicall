@@ -37,6 +37,43 @@ import {
 
 export const apiRouter = Router();
 
+const publicBaseUrl = (req: Parameters<Parameters<typeof apiRouter.post>[1]>[0]) => {
+  const forwardedProto = req.get("x-forwarded-proto");
+  const protocol = forwardedProto?.split(",")[0]?.trim() || req.protocol;
+  const host = req.get("host");
+  return `${protocol}://${host}`;
+};
+
+const vapiWebhookUrl = (
+  req: Parameters<Parameters<typeof apiRouter.post>[1]>[0],
+): string => `${publicBaseUrl(req)}/api/vapi-webhook`;
+
+const normalizeVapiWebhookPayload = (raw: unknown) => {
+  const body = raw as Record<string, unknown>;
+  const message = (body.message ?? {}) as Record<string, unknown>;
+  const call = (body.call ?? message.call ?? {}) as Record<string, unknown>;
+  const artifact = (body.artifact ?? message.artifact ?? {}) as Record<string, unknown>;
+  const endedReason = String(body.endedReason ?? message.endedReason ?? "");
+  const messageType = String(body.type ?? message.type ?? "");
+  const transcript = String(
+    body.transcript ?? message.transcript ?? artifact.transcript ?? "",
+  );
+  const callId = String(body.call_id ?? body.callId ?? call.id ?? "");
+  const callStatus =
+    endedReason.toLowerCase().includes("no-answer") ||
+    endedReason.toLowerCase().includes("voicemail")
+      ? "no_answer"
+      : messageType.toLowerCase().includes("failed")
+        ? "failed"
+        : "completed";
+
+  return {
+    call_id: callId,
+    transcript,
+    call_status: callStatus,
+  };
+};
+
 const persistCallResult = async (
   payload: Omit<
     ReturnType<typeof callResultSchema.parse>,
@@ -125,7 +162,11 @@ apiRouter.post("/run-pipeline", async (req, res) => {
       }
 
       try {
-        const outbound = await startOutboundCall({ patient, fdaAlerts });
+        const outbound = await startOutboundCall({
+          patient,
+          fdaAlerts,
+          webhookUrl: vapiWebhookUrl(req),
+        });
 
         addVapiCallContext(outbound.callId, {
           patient_id: patient.patient_id,
@@ -223,6 +264,7 @@ apiRouter.post("/vapi-outbound", async (req, res) => {
     const outbound = await startOutboundCall({
       patient,
       fdaAlerts,
+      webhookUrl: vapiWebhookUrl(req),
     });
 
     addVapiCallContext(outbound.callId, {
@@ -248,7 +290,7 @@ apiRouter.post("/vapi-outbound", async (req, res) => {
 
 apiRouter.post("/vapi-webhook", async (req, res) => {
   try {
-    const payload = vapiWebhookSchema.parse(req.body);
+    const payload = vapiWebhookSchema.parse(normalizeVapiWebhookPayload(req.body));
     const context = getVapiCallContext(payload.call_id);
     if (!context) {
       return res.status(404).json({ error: "Unknown call id" });

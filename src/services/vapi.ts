@@ -5,6 +5,7 @@ import { Patient } from "../types.js";
 export type VapiOutboundRequest = {
   patient: Patient;
   fdaAlerts: string[];
+  webhookUrl?: string;
 };
 
 export type VapiOutboundResult = {
@@ -70,6 +71,7 @@ const startLiveCall = async (
       metadata: {
         patient_id: request.patient.patient_id,
       },
+      ...(request.webhookUrl ? { serverUrl: request.webhookUrl } : {}),
     }),
   });
 
