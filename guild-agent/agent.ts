@@ -3,6 +3,9 @@
 import { type Task, agent } from "@guildai/agents-sdk";
 import { z } from "zod";
 
+/** Production MediCall API (Render). Override `backend_url` only for local dev. */
+const DEFAULT_MEDICALL_BACKEND_URL = "https://medicall-5v26.onrender.com";
+
 const inputSchema = z.object({
   command: z
     .string()
@@ -10,8 +13,10 @@ const inputSchema = z.object({
     .describe("Invocation phrase. Kept for operator traceability."),
   backend_url: z
     .string()
-    .default("http://localhost:8080")
-    .describe("MediCall backend base URL."),
+    .default(DEFAULT_MEDICALL_BACKEND_URL)
+    .describe(
+      "MediCall backend base URL (defaults to production Render; set http://localhost:8080 for local dev).",
+    ),
   patient_id: z
     .string()
     .optional()
@@ -84,7 +89,7 @@ async function run(input: Input, _task: Task<Tools>): Promise<Output> {
 
 export default agent({
   description:
-    "Triggers MediCall's call pipeline via the backend POST /api/run-pipeline endpoint. Delegates all orchestration to the backend.",
+    "Triggers MediCall's call pipeline via POST /api/run-pipeline on the deployed backend (defaults to https://medicall-5v26.onrender.com). Pass backend_url to hit a different environment.",
   inputSchema,
   outputSchema,
   tools: {},
