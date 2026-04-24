@@ -1,0 +1,38 @@
+{
+  "name": "medicall",
+  "version": "1.0.0",
+  "description": "AI system that automatically calls elderly patients every morning to check if they took their medication. If something's wrong — they missed doses, they're feeling sick, they're not answering — it texts their family and doctor immediately. Everything is tracked in a dashboard the family can see.",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsgo -p tsconfig.json",
+    "start": "node dist/index.js",
+    "check": "tsgo --noEmit",
+    "tsgo": "tsgo -p tsconfig.json"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abdullahw1/MediCall.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/abdullahw1/MediCall/issues"
+  },
+  "homepage": "https://github.com/abdullahw1/MediCall#readme",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260424.2",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.0-dev.20260416"
+  }
+}

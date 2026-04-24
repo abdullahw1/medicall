@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediCall Dashboard</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f4f7fb;
+        color: #1f2937;
+      }
+      .wrap {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      .card {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
+        padding: 18px;
+        margin-bottom: 16px;
+      }
+      .ok {
+        color: #047857;
+        font-weight: bold;
+      }
+      .alert {
+        color: #b91c1c;
+        font-weight: bold;
+      }
+      ul {
+        margin: 10px 0;
+      }
+      button {
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #fff;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      code {
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>MediCall Care Dashboard</h1>
+      <div class="card">
+        <strong>Live overview</strong>
+        <p id="totals">Loading...</p>
+      </div>
+
+      <div class="card">
+        <strong>Latest call results</strong>
+        <ul id="calls"></ul>
+      </div>
+
+      <div class="card">
+        <strong>TinyFish FDA check</strong>
+        <p>
+          <button id="fda-btn">Run FDA Medication Match</button>
+        </p>
+        <pre id="fda-output"><code>Ready.</code></pre>
+      </div>
+    </div>
+
+    <script>
+      const callsEl = document.getElementById("calls");
+      const totalsEl = document.getElementById("totals");
+      const fdaOutputEl = document.getElementById("fda-output");
+      const fdaButton = document.getElementById("fda-btn");
+
+      const render = async () => {
+        const [patientsRes, callsRes] = await Promise.all([
+          fetch("/api/patients"),
+          fetch("/api/call-results"),
+        ]);
+        const patients = await patientsRes.json();
+        const calls = await callsRes.json();
+
+        totalsEl.textContent = `${patients.length} patient(s), ${calls.length} call result(s).`;
+
+        callsEl.innerHTML = "";
+        for (const call of calls.slice(0, 10)) {
+          const li = document.createElement("li");
+          const statusClass = call.alert_sent ? "alert" : "ok";
+          li.innerHTML = `<span class="${statusClass}">${call.status}</span> — ${new Date(call.timestamp).toLocaleString()} — ${call.transcript}`;
+          callsEl.appendChild(li);
+        }
+      };
+
+      fdaButton.addEventListener("click", async () => {
+        const patientsRes = await fetch("/api/patients");
+        const patients = await patientsRes.json();
+        const patient = patients[0];
+        if (!patient) {
+          fdaOutputEl.textContent = "No patients loaded.";
+          return;
+        }
+
+        fdaOutputEl.textContent = "Checking FDA feed...";
+        const response = await fetch(
+          `/api/tinyfish/fda-alerts/${patient.patient_id}`,
+        );
+        const payload = await response.json();
+        fdaOutputEl.textContent = JSON.stringify(payload, null, 2);
+      });
+
+      render();
+      setInterval(render, 8000);
+    </script>
+  </body>
+</html>
+
