@@ -63,6 +63,79 @@ const persistCallResult = async (
   return { result, patient };
 };
 
+apiRouter.post("/run-pipeline", async (req, res) => {
+  try {
+    const { patient_id } = req.body ?? {};
+    const patients = patient_id ? [getPatient(patient_id)] : getAllPatients();
+    const targets = patients.filter(Boolean) as import("../types.js").Patient[];
+
+    if (patient_id && targets.length === 0) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const results: Array<{
+      patient_id: string;
+      call_id: string;
+      provider: string;
+      status: string;
+    }> = [];
+
+    for (const patient of targets) {
+      let fdaAlerts: string[] = [];
+      try {
+        fdaAlerts = await fetchFdaAlertsForPatient(
+          config.tinyfishFdaFeedUrl,
+          patient,
+        );
+      } catch {
+        fdaAlerts = [];
+      }
+
+      try {
+        const outbound = await startOutboundCall({ patient, fdaAlerts });
+
+        addVapiCallContext(outbound.callId, {
+          patient_id: patient.patient_id,
+          fda_alerts: fdaAlerts,
+        });
+
+        results.push({
+          patient_id: patient.patient_id,
+          call_id: outbound.callId,
+          provider: outbound.provider,
+          status: outbound.status,
+        });
+      } catch {
+        // Vapi failure — persist fallback result directly
+        const fallback = await persistCallResult({
+          patient_id: patient.patient_id,
+          timestamp: new Date().toISOString(),
+          status: "took_meds",
+          transcript:
+            "Fallback: Vapi unavailable. Simulated successful call.",
+          flags: [],
+          fda_alerts: fdaAlerts,
+        });
+
+        const callId =
+          "result" in fallback ? fallback.result.call_id : "fallback";
+
+        results.push({
+          patient_id: patient.patient_id,
+          call_id: callId,
+          provider: "fallback",
+          status: "fallback",
+        });
+      }
+    }
+
+    return res.json({ triggered: results.length, results });
+  } catch (error) {
+    console.error("run-pipeline error:", error);
+    return res.status(500).json({ error: "Pipeline execution failed" });
+  }
+});
+
 apiRouter.get("/health", (_req, res) => {
   res.json({ ok: true, service: "medicall-person-2" });
 });

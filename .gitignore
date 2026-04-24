@@ -29,3 +29,6 @@ guild-agent/guild.json
 
 # OS
 .DS_Store
+
+# InsForge & AI agent skills
+.claude

@@ -13,7 +13,7 @@
     "composite": true,
     "declaration": true,
     "declarationMap": true,
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "resolveJsonModule": true,
     "sourceMap": true
   },
