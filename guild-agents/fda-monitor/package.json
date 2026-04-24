@@ -1,0 +1,24 @@
+{
+  "name": "@guildai/medicall~medicall-fda-monitor",
+  "version": "1.0.0",
+  "author": "Guild.ai",
+  "type": "module",
+  "exports": {
+    ".": "./dist/agent.js"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "tsc --build --clean && rm -rf dist node_modules"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@guildai/agents-sdk": "*",
+    "zod": "^4.3.0"
+  },
+  "files": [
+    "./dist/**/*.js",
+    "./dist/**/*.d.ts"
+  ]
+}

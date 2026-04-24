@@ -26,6 +26,9 @@ dist/
 guild-agent/dist/
 guild-agent/node_modules/
 guild-agent/guild.json
+guild-agents/*/dist/
+guild-agents/*/node_modules/
+guild-agents/*/guild.json
 
 # OS
 .DS_Store
