@@ -30,6 +30,21 @@ export const callResultSchema = z.object({
   alert_sent: z.boolean(),
 });
 
+export const vapiOutboundRequestSchema = z.object({
+  patient_id: z.string().uuid(),
+});
+
+export const vapiWebhookSchema = z.object({
+  call_id: z.string().min(1),
+  transcript: z.string().default(""),
+  call_status: z.enum(["completed", "no_answer", "failed"]).default("completed"),
+});
+
+export const pharmacologyQuerySchema = z.object({
+  patient_id: z.string().uuid(),
+  question: z.string().min(3),
+});
+
 export type Patient = z.infer<typeof patientSchema>;
 export type CallResult = z.infer<typeof callResultSchema>;
 

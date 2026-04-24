@@ -13,7 +13,6 @@ dist/
 .agent
 .agents
 .augment
-.claude
 .cline
 .github/copilot*
 .kilocode
@@ -26,6 +25,7 @@ dist/
 # Guild.ai build artifacts
 guild-agent/dist/
 guild-agent/node_modules/
+guild-agent/guild.json
 
 # OS
 .DS_Store

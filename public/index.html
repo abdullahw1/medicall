@@ -811,6 +811,329 @@
           background-position: -200% 0;
         }
       }
+
+      /* ── Demo sequence progress strip ──────────────────────────
+         Appears between hero and KPIs when the operator presses
+         "Run demo sequence". Turns the judging beats into an
+         observable state machine instead of a narrated claim. */
+      .demo-strip {
+        display: none;
+        grid-template-columns: auto 1fr auto;
+        gap: 16px;
+        align-items: center;
+        padding: 14px 18px;
+        background: linear-gradient(
+          90deg,
+          var(--brand-tint),
+          var(--accent-soft)
+        );
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 18px;
+      }
+      .demo-strip.visible {
+        display: grid;
+      }
+      .demo-strip-title {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--brand-ink);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .demo-strip-title .spinner {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--brand);
+        border-top-color: transparent;
+        animation: spin 0.9s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .demo-steps {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .demo-step {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        background: rgba(255, 255, 255, 0.6);
+        border: 1px solid rgba(0, 0, 0, 0.04);
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--faint);
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+        transition: all 0.25s ease;
+      }
+      .demo-step .demo-num {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        opacity: 0.6;
+      }
+      .demo-step.active {
+        background: var(--brand);
+        color: white;
+        border-color: var(--brand-ink);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px -4px rgba(14, 81, 72, 0.4);
+      }
+      .demo-step.done {
+        background: var(--good-soft);
+        color: var(--good);
+        border-color: transparent;
+      }
+      .demo-step.done::before {
+        content: "✓";
+        margin-right: 2px;
+      }
+      .demo-close {
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--muted);
+        font-size: 16px;
+        padding: 4px 8px;
+      }
+
+      /* ── Doctor action panel ────────────────────────────────────
+         Only rendered when a concern event has landed in the last
+         24 hours. Leads with a one-sentence triage summary a busy
+         clinician could scan, followed by a cited brief preview
+         and an x402 payment gate for the full brief. */
+      .doctor-panel.hidden {
+        display: none;
+      }
+      .doctor-banner {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        padding: 16px 18px;
+        background: linear-gradient(
+          180deg,
+          var(--bad-soft),
+          transparent
+        );
+        border-top: 1px solid var(--border);
+      }
+      .doctor-banner .bolt {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: var(--bad);
+        color: white;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        font-weight: 700;
+      }
+      .doctor-triage {
+        margin: 0;
+        font-size: 14px;
+        color: var(--ink);
+        font-weight: 500;
+        line-height: 1.45;
+      }
+      .doctor-triage span {
+        color: var(--bad);
+        font-weight: 600;
+      }
+      .doctor-meta {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+        margin-top: 6px;
+      }
+
+      .cited-brief {
+        padding: 16px 18px;
+        border-top: 1px solid var(--border);
+      }
+      .cited-brief h4 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .cited-brief p {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: 17px;
+        line-height: 1.4;
+        color: var(--ink);
+      }
+      .cited-brief-sources {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .cited-brief-source {
+        display: grid;
+        grid-template-columns: 24px 1fr;
+        gap: 8px;
+        font-size: 12px;
+        color: var(--muted);
+        align-items: baseline;
+      }
+      .cited-brief-source .idx {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .cited-brief-source code {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--ink-soft);
+      }
+
+      .x402-gate {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 14px;
+        align-items: center;
+        margin: 14px 18px 18px;
+        padding: 14px 16px;
+        background: var(--ink);
+        color: white;
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+      }
+      .x402-gate::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 20% 0%,
+          rgba(106, 63, 181, 0.45),
+          transparent 60%
+        );
+        pointer-events: none;
+      }
+      .x402-gate .label {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.12em;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+      }
+      .x402-gate .amount {
+        font-family: var(--font-serif);
+        font-size: 26px;
+        line-height: 1;
+        margin-top: 4px;
+      }
+      .x402-gate .sub {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.65);
+        margin-top: 4px;
+      }
+      .x402-gate button {
+        background: white;
+        color: var(--ink);
+        border: none;
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 13px;
+        position: relative;
+      }
+      .x402-gate button:hover {
+        background: var(--brand-soft);
+      }
+      .x402-gate.unlocked {
+        background: var(--brand-ink);
+      }
+      .x402-gate.unlocked::before {
+        background: radial-gradient(
+          circle at 20% 0%,
+          rgba(15, 138, 95, 0.45),
+          transparent 60%
+        );
+      }
+      .x402-gate.unlocked .unlock-state {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--good);
+        color: white;
+        padding: 6px 10px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* ── Operator / audit panel ─────────────────────────────── */
+      .audit {
+        margin-top: 18px;
+      }
+      .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+      }
+      .audit-table th,
+      .audit-table td {
+        text-align: left;
+        padding: 10px 18px;
+        border-top: 1px solid var(--border);
+        color: var(--ink-soft);
+        vertical-align: top;
+      }
+      .audit-table th {
+        border-top: none;
+        background: var(--bg-elev);
+        color: var(--muted);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: 10.5px;
+      }
+      .audit-table tr:hover td {
+        background: var(--bg-elev);
+      }
+      .audit-table code {
+        font-family: inherit;
+        color: var(--ink);
+      }
+      .audit-mode.live {
+        color: var(--good);
+      }
+      .audit-mode.fallback {
+        color: var(--warn);
+      }
+      .audit-empty {
+        padding: 24px 18px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        font-family: var(--font-sans);
+      }
+
+      /* Per-agent timestamp line (spec: observability, not narration) */
+      .agent-ts {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--faint);
+        letter-spacing: 0.06em;
+        margin-top: 3px;
+      }
     </style>
   </head>
   <body>
@@ -858,11 +1181,42 @@
         </div>
         <div class="hero-actions">
           <button class="btn" id="trigger-weekly">Weekly report</button>
-          <button class="btn primary" id="trigger-call">
-            <span>▶</span> Run morning call
+          <button class="btn primary" id="trigger-demo">
+            <span>▶</span> Run demo sequence
           </button>
         </div>
       </section>
+
+      <!-- Demo sequence progress strip. Hidden until the operator
+           presses "Run demo sequence". Each step lights up when the
+           corresponding side-effect has completed, so judges see the
+           autonomy unfold rather than hearing it described. -->
+      <div class="demo-strip" id="demo-strip" aria-live="polite">
+        <div class="demo-strip-title">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="demo-strip-label">Running demo sequence…</span>
+        </div>
+        <div class="demo-steps" id="demo-steps">
+          <span class="demo-step" data-step="1">
+            <span class="demo-num">01</span>Call trigger
+          </span>
+          <span class="demo-step" data-step="2">
+            <span class="demo-num">02</span>Dashboard update
+          </span>
+          <span class="demo-step" data-step="3">
+            <span class="demo-num">03</span>Caregiver alert
+          </span>
+          <span class="demo-step" data-step="4">
+            <span class="demo-num">04</span>Cited brief
+          </span>
+          <span class="demo-step" data-step="5">
+            <span class="demo-num">05</span>x402 unlock
+          </span>
+        </div>
+        <button class="demo-close" id="demo-close" title="Dismiss">
+          ✕
+        </button>
+      </div>
 
       <!-- KPI row: four operator-level numbers. Deliberately few. -->
       <section class="kpis" aria-label="Today at a glance">
@@ -919,9 +1273,14 @@
                 <span>Recent calls</span>
                 <span class="eyebrow">Vapi webhook</span>
               </div>
-              <button class="btn ghost" id="refresh-calls" title="Refresh">
-                ⟳ Refresh
-              </button>
+              <div style="display: flex; gap: 6px">
+                <button class="btn ghost" id="trigger-call" title="Log a random call outcome">
+                  + Try random call
+                </button>
+                <button class="btn ghost" id="refresh-calls" title="Refresh">
+                  ⟳ Refresh
+                </button>
+              </div>
             </div>
             <div class="filter-row" id="filter-row">
               <button class="filter-chip active" data-filter="all">
@@ -969,6 +1328,9 @@
                     Nightly scrape of FDA recall &amp; safety feed, matched
                     to each patient's medication list.
                   </div>
+                  <div class="agent-ts" id="agent-fda-ts">
+                    Last run — never
+                  </div>
                 </div>
                 <span class="agent-status idle" id="agent-fda-status">
                   Idle
@@ -981,6 +1343,9 @@
                   <div class="agent-sub">
                     Outbound STT + LLM + TTS call with FDA alerts injected
                     into system prompt.
+                  </div>
+                  <div class="agent-ts" id="agent-call-ts">
+                    Last call — never
                   </div>
                 </div>
                 <span class="agent-status running" id="agent-call-status">
@@ -995,6 +1360,9 @@
                     Triggers only when the patient asks a drug-specific
                     question. Queries Ghost drug DB.
                   </div>
+                  <div class="agent-ts" id="agent-pharma-ts">
+                    No trigger in 24h
+                  </div>
                 </div>
                 <span class="agent-status idle" id="agent-pharma-status">
                   Standby
@@ -1007,6 +1375,9 @@
                   <div class="agent-sub">
                     Deterministic escalation: concern flag, 2+ missed
                     doses, or 3 no-answers in a row.
+                  </div>
+                  <div class="agent-ts" id="agent-alert-ts">
+                    Last escalation — none
                   </div>
                 </div>
                 <span class="agent-status idle" id="agent-alert-status">
@@ -1021,9 +1392,12 @@
                     Plain-English summary mailed to caregiver &amp; doctor
                     every Sunday 6pm.
                   </div>
+                  <div class="agent-ts" id="agent-weekly-ts">
+                    Next run — Sunday 18:00 local
+                  </div>
                 </div>
                 <span class="agent-status idle" id="agent-weekly-status">
-                  Next: Sunday 18:00
+                  Scheduled
                 </span>
               </div>
             </div>
@@ -1067,8 +1441,127 @@
             </p>
             <div class="summary-meta" id="summary-meta">—</div>
           </section>
+
+          <!-- Doctor action panel. Triage banner leads with a
+               scannable one-liner a busy clinician could parse in
+               under three seconds. The cited brief preview is set
+               in the serif face so it reads like clinical prose,
+               and the x402 gate below it becomes the monetization
+               beat in the demo. IDs below preserve backward
+               compatibility with the existing brief endpoints. -->
+          <section
+            class="card doctor-panel"
+            id="doctor-panel"
+            aria-label="Doctor action panel"
+          >
+            <div class="card-head">
+              <div class="card-title">
+                <span>Doctor action</span>
+                <span class="eyebrow">Concern response</span>
+              </div>
+              <div style="display: flex; gap: 6px; align-items: center">
+                <span class="chip bad" id="doctor-chip" hidden>
+                  <span class="chip-dot"></span>Urgent
+                </span>
+                <button class="btn" id="brief-generate">
+                  Generate brief
+                </button>
+              </div>
+            </div>
+
+            <div
+              class="doctor-banner"
+              id="doctor-banner"
+              style="display: none"
+            >
+              <div class="bolt" aria-hidden="true">!</div>
+              <div style="flex: 1; min-width: 0">
+                <p class="doctor-triage" id="doctor-triage">—</p>
+                <div class="doctor-meta" id="doctor-meta">—</div>
+              </div>
+            </div>
+
+            <div
+              class="cited-brief"
+              id="brief-block"
+              style="display: none"
+            >
+              <h4>Cited brief · preview</h4>
+              <p id="brief-preview">—</p>
+              <div
+                class="cited-brief-sources"
+                id="brief-sources"
+              ></div>
+              <div
+                id="brief-meta"
+                class="agent-ts"
+                style="margin-top: 12px"
+              >
+                —
+              </div>
+              <div
+                id="brief-citations"
+                style="display: none"
+                aria-hidden="true"
+              ></div>
+            </div>
+
+            <div
+              class="x402-gate"
+              id="x402-gate"
+              style="display: none"
+            >
+              <div>
+                <div class="label">x402 · unlock full brief</div>
+                <div class="amount" id="x402-amount">$0.25</div>
+                <div class="sub" id="x402-sub">
+                  Pay-per-brief access · settled on-chain · no
+                  subscription
+                </div>
+              </div>
+              <button id="x402-unlock">Unlock full brief</button>
+            </div>
+
+            <div class="empty" id="doctor-empty">
+              No concern brief yet. When a concern call lands,
+              generate a cited brief to unlock for the physician.
+            </div>
+          </section>
         </div>
       </div>
+
+      <!-- Operator / audit panel. Durable ISO timestamps and raw
+           identifiers (patient_id, call_id) laid out in a mono
+           table. This surface is for operators auditing that
+           everything actually persisted — not for the caregiver
+           story. -->
+      <section class="card audit" aria-label="Operator audit">
+        <div class="card-head">
+          <div class="card-title">
+            <span>Operator audit</span>
+            <span class="eyebrow">Durable IDs &amp; source mode</span>
+          </div>
+          <span class="chip" id="audit-count">
+            <span class="chip-dot"></span>
+            <span>— records</span>
+          </span>
+        </div>
+        <div id="audit-body">
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>timestamp (iso)</th>
+                <th>patient_id</th>
+                <th>call_id</th>
+                <th>status</th>
+                <th>alert</th>
+                <th>fda source</th>
+              </tr>
+            </thead>
+            <tbody id="audit-rows"></tbody>
+          </table>
+        </div>
+      </section>
 
       <footer class="footer">
         <div>
@@ -1120,10 +1613,37 @@
         agentPharma: $("#agent-pharma-status"),
         agentAlert: $("#agent-alert-status"),
         agentWeekly: $("#agent-weekly-status"),
+        agentFdaTs: $("#agent-fda-ts"),
+        agentCallTs: $("#agent-call-ts"),
+        agentPharmaTs: $("#agent-pharma-ts"),
+        agentAlertTs: $("#agent-alert-ts"),
+        agentWeeklyTs: $("#agent-weekly-ts"),
         fdaSourceLine: $("#fda-source-line"),
         fdaAlerts: $("#fda-alerts"),
         summaryText: $("#summary-text"),
         summaryMeta: $("#summary-meta"),
+        doctorPanel: $("#doctor-panel"),
+        doctorChip: $("#doctor-chip"),
+        doctorBanner: $("#doctor-banner"),
+        doctorTriage: $("#doctor-triage"),
+        doctorMeta: $("#doctor-meta"),
+        doctorEmpty: $("#doctor-empty"),
+        briefBlock: $("#brief-block"),
+        briefPreview: $("#brief-preview"),
+        briefMeta: $("#brief-meta"),
+        briefSources: $("#brief-sources"),
+        briefCitations: $("#brief-citations"),
+        briefGenerate: $("#brief-generate"),
+        x402Gate: $("#x402-gate"),
+        x402Amount: $("#x402-amount"),
+        x402Sub: $("#x402-sub"),
+        x402Unlock: $("#x402-unlock"),
+        auditRows: $("#audit-rows"),
+        auditCount: $("#audit-count"),
+        demoStrip: $("#demo-strip"),
+        demoStripLabel: $("#demo-strip-label"),
+        demoSteps: $("#demo-steps"),
+        demoClose: $("#demo-close"),
         toasts: $("#toasts"),
       };
 
@@ -1133,6 +1653,9 @@
         filter: "all",
         lastFdaRun: null,
         fdaPayload: null,
+        latestBrief: null,
+        briefUnlocked: false,
+        demoRunning: false,
       };
 
       /* ── Pure helpers ────────────────────────────────────────── */
@@ -1423,6 +1946,350 @@
         }
       };
 
+      /* ── Doctor action panel ─────────────────────────────────
+         The panel has four states:
+           - No concern + no brief  → empty message, triage hidden
+           - Concern exists + no brief → urgent triage visible,
+             "Generate brief" prompts the operator
+           - Brief exists + locked  → full triage + cited preview
+             + x402 gate with "Unlock full brief" CTA
+           - Brief exists + unlocked → full triage + cited preview
+             + x402 gate swapped to green "Unlocked" state */
+      const latestConcernCall = () =>
+        state.calls.find((c) => c.status === "concern") ?? null;
+
+      const renderDoctorBrief = (brief) => {
+        state.latestBrief = brief ?? null;
+        if (!brief) state.briefUnlocked = false;
+
+        const concern = latestConcernCall();
+        const patient = state.patients[0];
+
+        const hasAnything = Boolean(brief) || Boolean(concern);
+        el.doctorEmpty.style.display = hasAnything ? "none" : "";
+        el.doctorChip.hidden = !concern;
+
+        if (concern && patient) {
+          el.doctorBanner.style.display = "flex";
+          const flags =
+            concern.flags && concern.flags.length
+              ? concern.flags.join(", ")
+              : "general concern";
+          el.doctorTriage.innerHTML =
+            `<span>${escapeHtml(patient.name)}</span> flagged <span>${escapeHtml(
+              flags,
+            )}</span> during the morning call.`;
+          el.doctorMeta.textContent = [
+            `call_id ${concern.call_id.slice(0, 8)}…`,
+            concern.fda_alerts.length
+              ? `${concern.fda_alerts.length} FDA context`
+              : "0 FDA context",
+            new Date(concern.timestamp).toISOString(),
+          ].join("  ·  ");
+        } else {
+          el.doctorBanner.style.display = "none";
+        }
+
+        if (brief) {
+          el.briefBlock.style.display = "";
+          el.briefPreview.textContent = brief.preview || "—";
+          const citations = brief.citations ?? [];
+          el.briefSources.innerHTML = citations
+            .slice(0, 6)
+            .map((url, i) => {
+              const short = url.replace(/^https?:\/\//, "").slice(0, 60);
+              return `
+                <div class="cited-brief-source">
+                  <span class="idx">${String(i + 1).padStart(2, "0")}</span>
+                  <span><a href="${url}" target="_blank" rel="noopener"><code>${escapeHtml(
+                    short,
+                  )}</code></a></span>
+                </div>
+              `;
+            })
+            .join("");
+
+          el.briefMeta.textContent = [
+            `brief_id ${brief.brief_id}`,
+            `generated ${new Date(brief.generated_at).toISOString()}`,
+            brief.cited_doc ? `log: ${brief.cited_doc}` : null,
+          ]
+            .filter(Boolean)
+            .join("  ·  ");
+
+          // Hidden mirror list for any external code still watching
+          // the legacy #brief-citations element.
+          el.briefCitations.innerHTML = citations
+            .map((u) => `<span>${u}</span>`)
+            .join("");
+
+          el.x402Gate.style.display = "grid";
+          const price = Number(brief.x402_price_usd ?? 0.25).toFixed(2);
+          el.x402Amount.textContent = `$${price}`;
+          if (state.briefUnlocked) {
+            el.x402Gate.classList.add("unlocked");
+            el.x402Sub.innerHTML =
+              "<span class=\"unlock-state\">✓ Unlocked · full brief delivered</span>";
+            el.x402Unlock.textContent = "View full brief";
+          } else {
+            el.x402Gate.classList.remove("unlocked");
+            el.x402Sub.textContent =
+              "Pay-per-brief access · settled on-chain · no subscription";
+            el.x402Unlock.textContent = "Unlock full brief";
+          }
+
+          el.briefGenerate.textContent = "Regenerate";
+        } else {
+          el.briefBlock.style.display = "none";
+          el.x402Gate.style.display = "none";
+          el.briefGenerate.textContent = "Generate brief";
+        }
+      };
+
+      const generateDoctorBrief = async () => {
+        const concern = latestConcernCall();
+        if (!concern) {
+          toast("No concern call found yet", "bad");
+          return;
+        }
+
+        el.briefGenerate.disabled = true;
+        try {
+          const response = await fetch(
+            `/api/doctor-briefs/generate/${concern.call_id}`,
+            { method: "POST" },
+          );
+          const payload = await response.json();
+          if (!response.ok) {
+            throw new Error(payload.error || "Brief generation failed");
+          }
+          state.briefUnlocked = false;
+          renderDoctorBrief(payload);
+          toast("Doctor cited brief generated", "good");
+          return payload;
+        } catch (error) {
+          toast("Brief generation failed", "bad");
+          return null;
+        } finally {
+          el.briefGenerate.disabled = false;
+        }
+      };
+
+      const loadLatestDoctorBrief = async () => {
+        const patient = state.patients[0];
+        if (!patient) return;
+        try {
+          const response = await fetch(
+            `/api/doctor-briefs/latest/${patient.patient_id}`,
+          );
+          if (!response.ok) {
+            renderDoctorBrief(null);
+            return;
+          }
+          const payload = await response.json();
+          renderDoctorBrief(payload);
+        } catch {
+          renderDoctorBrief(null);
+        }
+      };
+
+      /* ── Operator audit panel ───────────────────────────────
+         Exposes call_id, patient_id, ISO timestamps, escalation
+         state, and FDA source mode in a monospace grid. Proves
+         persistence without the caregiver framing chrome. */
+      const renderAudit = () => {
+        const rows = state.calls.slice(0, 12);
+        el.auditCount.querySelector("span:last-child").textContent =
+          `${state.calls.length} records`;
+
+        if (rows.length === 0) {
+          el.auditRows.innerHTML = `<tr><td colspan="6" class="audit-empty">No call records persisted yet.</td></tr>`;
+          return;
+        }
+
+        const fdaMode =
+          state.fdaPayload?.source === "fallback_fixture"
+            ? "fallback"
+            : state.lastFdaRun
+              ? "live"
+              : "idle";
+
+        el.auditRows.innerHTML = rows
+          .map((c) => {
+            const alertBit = c.alert_sent
+              ? `<span style="color: var(--bad)">alert_sent=true</span>`
+              : `<span style="color: var(--faint)">alert_sent=false</span>`;
+            const fdaBit = c.fda_alerts && c.fda_alerts.length
+              ? `<span class="audit-mode ${fdaMode}">${fdaMode} · ${c.fda_alerts.length}</span>`
+              : `<span class="audit-mode" style="color: var(--faint)">none</span>`;
+            return `
+              <tr>
+                <td><code>${c.timestamp}</code></td>
+                <td><code>${c.patient_id.slice(0, 8)}…</code></td>
+                <td><code>${c.call_id.slice(0, 8)}…</code></td>
+                <td>${c.status}</td>
+                <td>${alertBit}</td>
+                <td>${fdaBit}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      };
+
+      /* ── Per-agent observable timestamps ────────────────────
+         Spec: "Include timestamps so autonomy is observable,
+         not narrated." Each agent's last activity is derived
+         from the call data rather than fabricated. */
+      const renderAgentTimestamps = () => {
+        const calls = state.calls;
+        const last24 = Date.now() - 24 * 60 * 60 * 1000;
+        const recent = calls.filter(
+          (c) => new Date(c.timestamp).getTime() >= last24,
+        );
+
+        el.agentFdaTs.textContent = state.lastFdaRun
+          ? `Last run · ${new Date(state.lastFdaRun).toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+              second: "2-digit",
+            })}`
+          : "No run yet this session";
+
+        el.agentCallTs.textContent = recent[0]
+          ? `Last call · ${new Date(recent[0].timestamp).toISOString()}`
+          : "No calls in the last 24h";
+
+        const lastDrugQ = recent.find(
+          (c) => c.flags && c.flags.includes("drug_question"),
+        );
+        el.agentPharmaTs.textContent = lastDrugQ
+          ? `Triggered · ${new Date(lastDrugQ.timestamp).toLocaleTimeString(
+              [],
+              { hour: "numeric", minute: "2-digit" },
+            )}`
+          : "No trigger in 24h";
+
+        const lastEsc = recent.find((c) => c.alert_sent);
+        el.agentAlertTs.textContent = lastEsc
+          ? `Last escalation · ${new Date(lastEsc.timestamp).toLocaleTimeString(
+              [],
+              { hour: "numeric", minute: "2-digit" },
+            )}`
+          : "No escalations in 24h";
+
+        el.agentWeeklyTs.textContent = "Next run · Sunday 18:00 local";
+      };
+
+      /* ── x402 unlock (client-side demo beat) ────────────────
+         The backend always returns unlock_state="locked" so the
+         unlock is a dashboard interaction. The flipped state is
+         retained in the JS state so subsequent refreshes don't
+         re-lock the UI for the duration of the demo. */
+      const unlockBrief = () => {
+        if (!state.latestBrief) return;
+        state.briefUnlocked = true;
+        renderDoctorBrief(state.latestBrief);
+        toast("x402 settled · full brief unlocked", "good");
+      };
+
+      /* ── Run demo sequence (judging beats, observable) ──────
+         Orchestrates the five beats the spec calls out:
+           1. Call trigger       → /api/vapi-outbound
+           2. Dashboard update   → /api/vapi-webhook with concern
+                                    transcript + refresh
+           3. Caregiver alert    → deterministic from webhook
+                                    (we visualize the side-effect)
+           4. Cited brief        → /api/doctor-briefs/generate/:id
+           5. x402 unlock        → flip the gate state
+         Each step updates the demo strip so judges watch the
+         autonomy unfold instead of hearing it described. */
+      const demoDelay = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      const setDemoStep = (n, state) => {
+        const step = el.demoSteps.querySelector(`[data-step="${n}"]`);
+        if (!step) return;
+        step.classList.remove("active", "done");
+        if (state) step.classList.add(state);
+      };
+
+      const runDemoSequence = async () => {
+        const patient = state.patients[0];
+        if (!patient) {
+          toast("No patients loaded", "bad");
+          return;
+        }
+        if (state.demoRunning) return;
+        state.demoRunning = true;
+
+        el.demoStrip.classList.add("visible");
+        el.demoStripLabel.textContent = "Running demo sequence…";
+        [1, 2, 3, 4, 5].forEach((n) => setDemoStep(n, null));
+
+        try {
+          // Step 1 — outbound call trigger.
+          setDemoStep(1, "active");
+          const outbound = await fetch("/api/vapi-outbound", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patient_id: patient.patient_id }),
+          });
+          if (!outbound.ok) throw new Error("outbound failed");
+          const outboundPayload = await outbound.json();
+          setDemoStep(1, "done");
+          await demoDelay(450);
+
+          // Step 2 — webhook with concern transcript → dashboard update.
+          setDemoStep(2, "active");
+          const webhook = await fetch("/api/vapi-webhook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              call_id: outboundPayload.call_id,
+              transcript:
+                "I feel a little dizzy this morning, and my chest has been tight.",
+              call_status: "completed",
+            }),
+          });
+          if (!webhook.ok) throw new Error("webhook failed");
+          const webhookPayload = await webhook.json();
+          await refresh();
+          setDemoStep(2, "done");
+          await demoDelay(450);
+
+          // Step 3 — caregiver alert beat (already persisted in the
+          // webhook path; we just make the side-effect visible).
+          setDemoStep(3, "active");
+          const alerted = webhookPayload.result?.alert_sent;
+          if (alerted) {
+            toast("SMS + email sent to caregiver and doctor", "bad");
+          } else {
+            toast("No escalation threshold crossed", "good");
+          }
+          await demoDelay(550);
+          setDemoStep(3, "done");
+
+          // Step 4 — cited brief generation.
+          setDemoStep(4, "active");
+          const brief = await generateDoctorBrief();
+          if (!brief) throw new Error("brief failed");
+          await demoDelay(450);
+          setDemoStep(4, "done");
+
+          // Step 5 — x402 unlock (client-side demo beat).
+          setDemoStep(5, "active");
+          await demoDelay(500);
+          unlockBrief();
+          setDemoStep(5, "done");
+
+          el.demoStripLabel.textContent = "Demo sequence complete";
+        } catch (e) {
+          el.demoStripLabel.textContent = "Demo sequence failed";
+          toast("Demo sequence failed", "bad");
+        } finally {
+          state.demoRunning = false;
+        }
+      };
+
       /* ── FDA run ─────────────────────────────────────────────── */
       const runFdaMatch = async () => {
         const patient = state.patients[0];
@@ -1521,20 +2388,29 @@
         const pick = scenarios[Math.floor(Math.random() * scenarios.length)];
 
         try {
-          const body = {
-            patient_id: patient.patient_id,
-            timestamp: new Date().toISOString(),
-            status: pick.status,
-            transcript: pick.transcript,
-            flags: pick.flags,
-            fda_alerts: state.fdaPayload?.alerts ?? [],
-          };
-          const r = await fetch("/api/call-results", {
+          const outbound = await fetch("/api/vapi-outbound", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(body),
+            body: JSON.stringify({ patient_id: patient.patient_id }),
           });
-          const result = await r.json();
+
+          if (!outbound.ok) {
+            throw new Error("Outbound call initiation failed");
+          }
+          const outboundPayload = await outbound.json();
+
+          const webhook = await fetch("/api/vapi-webhook", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              call_id: outboundPayload.call_id,
+              transcript: pick.transcript,
+              call_status: pick.status === "no_answer" ? "no_answer" : "completed",
+            }),
+          });
+          const webhookPayload = await webhook.json();
+          const result = webhookPayload.result ?? webhookPayload;
+
           if (result.alert_sent) {
             toast(`Escalated to caregiver · ${pick.status}`, "bad");
           } else {
@@ -1561,6 +2437,9 @@
           renderRoster();
           renderTimeline();
           renderAgents();
+          renderAgentTimestamps();
+          renderAudit();
+          loadLatestDoctorBrief();
         } catch (e) {
           el.healthLabel.textContent = "Reconnecting…";
         }
@@ -1586,6 +2465,12 @@
       $("#trigger-call").addEventListener("click", runMorningCall);
       $("#trigger-weekly").addEventListener("click", loadWeeklySummary);
       $("#summary-refresh").addEventListener("click", loadWeeklySummary);
+      $("#brief-generate").addEventListener("click", generateDoctorBrief);
+      $("#trigger-demo").addEventListener("click", runDemoSequence);
+      $("#x402-unlock").addEventListener("click", unlockBrief);
+      $("#demo-close").addEventListener("click", () => {
+        el.demoStrip.classList.remove("visible");
+      });
 
       /* ── Boot ────────────────────────────────────────────────── */
       renderClock();

@@ -14,6 +14,12 @@ export const config = {
   port: Number(process.env.PORT ?? 8080),
   appUrl: process.env.APP_URL ?? "http://localhost:8080",
   useMockNotifications: process.env.USE_MOCK_NOTIFICATIONS !== "false",
+  useMockVapi: process.env.USE_MOCK_VAPI !== "false",
+  vapiApiBaseUrl: process.env.VAPI_API_BASE_URL ?? "https://api.vapi.ai",
+  vapiApiKey: process.env.VAPI_API_KEY ?? "",
+  vapiPhoneNumberId: process.env.VAPI_PHONE_NUMBER_ID ?? "",
+  vapiAssistantId: process.env.VAPI_ASSISTANT_ID ?? "",
+  x402PriceUsd: Number(process.env.X402_PRICE_USD ?? "0.1"),
   insforgeUrl: process.env.INSFORGE_URL ?? "",
   insforgeAnonKey: process.env.INSFORGE_ANON_KEY ?? "",
   tinyfishFdaFeedUrl: getEnv(

@@ -48,8 +48,13 @@ npm run build
 - `GET /api/patients`
 - `GET /api/call-results`
 - `POST /api/call-results`
+- `POST /api/vapi-outbound`
+- `POST /api/vapi-webhook`
+- `POST /api/pharmacology/query`
 - `GET /api/tinyfish/fda-alerts/:patientId`
 - `GET /api/reports/weekly/:patientId`
+- `POST /api/doctor-briefs/generate/:callId`
+- `GET /api/doctor-briefs/latest/:patientId`
 
 ## Payload Contract (Call Result Ingestion)
 

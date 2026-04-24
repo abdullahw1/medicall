@@ -1,71 +1,175 @@
-/**
- * MediCall Call Agent — Guild.ai LLM Agent
- *
- * Orchestrates the daily medication adherence call pipeline:
- *   1. Fetch all patients from the MediCall backend
- *   2. For each patient, fetch FDA alerts
- *   3. Initiate Vapi outbound calls with patient context
- *   4. Handle fallbacks when Vapi is unavailable
- *
- * Trigger manually:  guild agent chat "run calls"
- * Trigger via test:  guild agent test
- * Daily schedule:    guild trigger create --type time --frequency DAILY --time 08:00 --agent medicall-call-agent
- */
+"use agent";
 
-import { guildTools, llmAgent, pick } from "@guildai/agents-sdk";
+import { type Task, agent } from "@guildai/agents-sdk";
+import { z } from "zod";
 
-const systemPrompt = `You are the MediCall daily medication adherence call agent.
+const inputSchema = z.object({
+  command: z
+    .string()
+    .default("run calls")
+    .describe("Invocation phrase. Kept for operator traceability."),
+  backend_url: z
+    .string()
+    .default("http://localhost:8080")
+    .describe("MediCall backend base URL."),
+  demo_patient_only: z
+    .boolean()
+    .default(true)
+    .describe("When true, only process the seed patient for demo reliability."),
+});
+type Input = z.infer<typeof inputSchema>;
 
-Your job is to orchestrate outbound phone calls to elderly patients to check if they took their medications. When triggered with "run calls" or any similar instruction, execute this pipeline:
+const patientSchema = z.object({
+  patient_id: z.string(),
+  name: z.string(),
+  medications: z.array(z.string()),
+});
+type Patient = z.infer<typeof patientSchema>;
 
-## Pipeline Steps
+const outputSchema = z.object({
+  command: z.string(),
+  backend_url: z.string(),
+  processed_count: z.number(),
+  summary: z.string(),
+  results: z.array(
+    z.object({
+      patient_id: z.string(),
+      patient_name: z.string(),
+      fda_alert_count: z.number(),
+      posted: z.boolean(),
+      note: z.string(),
+      alert_sent: z.boolean().optional(),
+      call_id: z.string().optional(),
+    }),
+  ),
+});
+type Output = z.infer<typeof outputSchema>;
 
-1. **Fetch patients** — GET {BACKEND_URL}/api/patients to retrieve the patient list.
-2. **For each patient:**
-   a. **Fetch FDA alerts** — GET {BACKEND_URL}/api/tinyfish/fda-alerts/{patient_id}
-      - If this fails, proceed with empty alerts and note the failure.
-   b. **Initiate Vapi call** — POST {BACKEND_URL}/api/vapi-outbound with the patient context:
-      - patient_id, patient name, phone number, medications list, FDA alerts
-      - The Vapi service on the backend handles the actual outbound call.
-   c. **On Vapi failure** — If the call initiation fails, POST a fallback result directly:
-      - POST {BACKEND_URL}/api/call-results with:
-        - patient_id: the patient's ID
-        - timestamp: current ISO 8601 time
-        - status: "took_meds"
-        - transcript: "Fallback: Vapi unavailable. Simulated successful call."
-        - flags: []
-        - fda_alerts: [] (or whatever was fetched)
-3. **Report completion** — Summarize what happened for each patient.
+type Tools = Record<string, never>;
 
-## Environment
+const SEED_PATIENT_ID = "11111111-1111-4111-8111-111111111111";
 
-- BACKEND_URL defaults to http://localhost:8080 unless specified otherwise.
-- The backend is an Express server with REST endpoints for patients, call results, and FDA alerts.
-- The seed patient for demo is Margaret Ellis (patient_id: 11111111-1111-4111-8111-111111111111).
+const safeJson = async <T>(
+  response: Response,
+  fallback: T,
+): Promise<T> => {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return fallback;
+  }
+};
 
-## Behavior Rules
+async function run(input: Input, _task: Task<Tools>): Promise<Output> {
+  const baseUrl = input.backend_url.replace(/\/$/, "");
+  const patientsRes = await fetch(`${baseUrl}/api/patients`);
+  if (!patientsRes.ok) {
+    throw new Error(
+      `Failed to fetch patients: ${patientsRes.status} ${patientsRes.statusText}`,
+    );
+  }
 
-- Process patients sequentially, not in parallel.
-- Always log warnings when fallbacks activate.
-- If the entire patient fetch fails, report the error and stop.
-- When manually triggered for demo, focus on the seed patient Margaret Ellis.
-- Keep responses concise — report success/failure per patient.
-`;
+  const rawPatients = await safeJson<unknown[]>(patientsRes, []);
+  const parsedPatients = rawPatients
+    .map((row) => patientSchema.safeParse(row))
+    .filter((p) => p.success)
+    .map((p) => p.data);
 
-const description = `MediCall daily medication adherence call agent.
+  const patientsToProcess: Patient[] = input.demo_patient_only
+    ? parsedPatients.filter((p) => p.patient_id === SEED_PATIENT_ID)
+    : parsedPatients;
 
-Orchestrates outbound voice calls to elderly patients to check medication adherence.
-Fetches patient data and FDA alerts from the MediCall backend, initiates Vapi calls,
-handles fallbacks when services are unavailable, and posts call results.
+  const results: Output["results"] = [];
+  for (const patient of patientsToProcess) {
+    let fdaAlerts: string[] = [];
+    let note = "Posted simulated fallback call result.";
 
-Trigger with "run calls" to execute the full pipeline, or ask about a specific patient.
-Designed for daily scheduled execution or on-demand demo triggers.`;
+    try {
+      const fdaRes = await fetch(
+        `${baseUrl}/api/tinyfish/fda-alerts/${patient.patient_id}`,
+      );
+      if (fdaRes.ok) {
+        const payload = await safeJson<{ alerts?: string[] }>(fdaRes, {});
+        fdaAlerts = Array.isArray(payload.alerts) ? payload.alerts : [];
+      } else {
+        note = `FDA alert fetch failed (${fdaRes.status}); using empty alerts.`;
+      }
+    } catch {
+      note = "FDA alert fetch failed (network); using empty alerts.";
+    }
 
-export default llmAgent({
-  description,
-  tools: {
-    ...pick(guildTools, ["guild_get_me"]),
-  },
-  systemPrompt,
-  mode: "one-shot",
+    const outboundRes = await fetch(`${baseUrl}/api/vapi-outbound`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patient_id: patient.patient_id }),
+    });
+
+    if (!outboundRes.ok) {
+      await safeJson<Record<string, unknown>>(outboundRes, {});
+      results.push({
+        patient_id: patient.patient_id,
+        patient_name: patient.name,
+        fda_alert_count: fdaAlerts.length,
+        posted: false,
+        note: `${note} Outbound call initiation failed (${outboundRes.status}).`,
+      });
+      continue;
+    }
+
+    const outboundPayload = await safeJson<{
+      call_id?: string;
+      provider?: "vapi" | "mock";
+    }>(
+      outboundRes,
+      {},
+    );
+
+    // In mock provider mode, immediately emulate a completion webhook so the
+    // downstream alerting/dashboard path runs in one deterministic execution.
+    let webhookResult:
+      | { call_id?: string; result?: { alert_sent?: boolean } }
+      | undefined;
+    if (outboundPayload.call_id && outboundPayload.provider === "mock") {
+      const webhookRes = await fetch(`${baseUrl}/api/vapi-webhook`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          call_id: outboundPayload.call_id,
+          transcript:
+            "Fallback: Vapi unavailable during automated run. Simulated successful call completion.",
+          call_status: "completed",
+        }),
+      });
+      webhookResult = await safeJson(webhookRes, {});
+    }
+    results.push({
+      patient_id: patient.patient_id,
+      patient_name: patient.name,
+      fda_alert_count: fdaAlerts.length,
+      posted: true,
+      note:
+        outboundPayload.provider === "mock"
+          ? `${note} Mock provider completed through webhook fallback.`
+          : "Vapi outbound queued; awaiting webhook completion.",
+      call_id: outboundPayload.call_id ?? webhookResult?.call_id,
+      alert_sent: webhookResult?.result?.alert_sent ?? false,
+    });
+  }
+
+  return {
+    command: input.command,
+    backend_url: baseUrl,
+    processed_count: results.length,
+    summary: `Processed ${results.length} patient(s).`,
+    results,
+  };
+}
+
+export default agent({
+  description:
+    "Runs MediCall's daily backend-aligned call pipeline: fetches patients, loads FDA context, and posts deterministic call results for dashboard/escalation workflows.",
+  inputSchema,
+  outputSchema,
+  tools: {},
+  run,
 });

@@ -2,19 +2,66 @@ import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { config } from "../config.js";
 import { shouldEscalateAlert } from "../services/alerts.js";
+import { generateDoctorBrief } from "../services/doctorBrief.js";
 import { sendCaregiverAndDoctorAlert } from "../services/insforge.js";
+import {
+  answerDrugQuestion,
+  isDrugQuestion,
+} from "../services/pharmacology.js";
 import { buildWeeklySummary } from "../services/summary.js";
 import { fetchFdaAlertsForPatient } from "../services/tinyfish.js";
+import { startOutboundCall } from "../services/vapi.js";
 import {
+  addDoctorBrief,
   addCallResult,
+  addVapiCallContext,
+  getCallResultById,
+  getDoctorBriefByCallId,
   getAllCallResults,
   getAllPatients,
+  getLatestDoctorBriefForPatient,
   getPatient,
+  getVapiCallContext,
   getRecentCallResultsForPatient,
 } from "../store.js";
-import { callResultSchema } from "../types.js";
+import {
+  callResultSchema,
+  pharmacologyQuerySchema,
+  vapiOutboundRequestSchema,
+  vapiWebhookSchema,
+} from "../types.js";
 
 export const apiRouter = Router();
+
+const persistCallResult = async (
+  payload: Omit<
+    ReturnType<typeof callResultSchema.parse>,
+    "call_id" | "alert_sent"
+  >,
+) => {
+  const patient = getPatient(payload.patient_id);
+  if (!patient) {
+    return { error: "Patient not found" as const };
+  }
+
+  const recentCalls = [
+    { ...payload, call_id: randomUUID(), alert_sent: false },
+    ...getRecentCallResultsForPatient(payload.patient_id, 5),
+  ];
+  const escalate = shouldEscalateAlert(recentCalls);
+  const result = {
+    ...payload,
+    call_id: randomUUID(),
+    alert_sent: escalate,
+  };
+
+  addCallResult(result);
+  if (escalate) {
+    await sendCaregiverAndDoctorAlert(patient, result);
+  }
+
+  return { result, patient };
+};
 
 apiRouter.get("/health", (_req, res) => {
   res.json({ ok: true, service: "medicall-person-2" });
@@ -33,33 +80,147 @@ apiRouter.post("/call-results", async (req, res) => {
     const payload = callResultSchema
       .omit({ call_id: true, alert_sent: true })
       .parse(req.body);
+    const persisted = await persistCallResult(payload);
+    if ("error" in persisted) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    return res.status(201).json(persisted.result);
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ error: "Invalid call result payload" });
+  }
+});
+
+apiRouter.post("/vapi-outbound", async (req, res) => {
+  try {
+    const payload = vapiOutboundRequestSchema.parse(req.body);
     const patient = getPatient(payload.patient_id);
     if (!patient) {
       return res.status(404).json({ error: "Patient not found" });
     }
 
-    const recentCalls = [
-      { ...payload, call_id: randomUUID(), alert_sent: false },
-      ...getRecentCallResultsForPatient(payload.patient_id, 5),
-    ];
-
-    const escalate = shouldEscalateAlert(recentCalls);
-    const result = {
-      ...payload,
-      call_id: randomUUID(),
-      alert_sent: escalate,
-    };
-
-    addCallResult(result);
-
-    if (escalate) {
-      await sendCaregiverAndDoctorAlert(patient, result);
+    let fdaAlerts: string[] = [];
+    try {
+      fdaAlerts = await fetchFdaAlertsForPatient(config.tinyfishFdaFeedUrl, patient);
+    } catch {
+      fdaAlerts = [];
     }
 
-    return res.status(201).json(result);
+    const outbound = await startOutboundCall({
+      patient,
+      fdaAlerts,
+    });
+
+    addVapiCallContext(outbound.callId, {
+      patient_id: patient.patient_id,
+      fda_alerts: fdaAlerts,
+    });
+
+    return res.status(201).json({
+      call_id: outbound.callId,
+      provider: outbound.provider,
+      status: outbound.status,
+      patient_id: patient.patient_id,
+      fda_alert_count: fdaAlerts.length,
+    });
   } catch (error) {
     console.error(error);
-    return res.status(400).json({ error: "Invalid call result payload" });
+    return res.status(400).json({ error: "Invalid vapi outbound payload" });
+  }
+});
+
+apiRouter.post("/vapi-webhook", async (req, res) => {
+  try {
+    const payload = vapiWebhookSchema.parse(req.body);
+    const context = getVapiCallContext(payload.call_id);
+    if (!context) {
+      return res.status(404).json({ error: "Unknown call id" });
+    }
+
+    const patient = getPatient(context.patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const transcript = payload.transcript ?? "";
+    const lower = transcript.toLowerCase();
+    let status: "took_meds" | "missed_meds" | "no_answer" | "concern" =
+      "took_meds";
+    let flags: string[] = [];
+
+    if (payload.call_status === "no_answer" || lower.includes("voicemail")) {
+      status = "no_answer";
+    } else if (
+      lower.includes("chest pain") ||
+      lower.includes("dizzy") ||
+      lower.includes("dizziness") ||
+      lower.includes("confused") ||
+      lower.includes("shortness of breath")
+    ) {
+      status = "concern";
+      if (lower.includes("chest pain")) flags.push("chest_pain");
+      if (lower.includes("dizzy") || lower.includes("dizziness")) {
+        flags.push("dizziness");
+      }
+      if (lower.includes("confused")) flags.push("confusion");
+      if (lower.includes("shortness of breath")) flags.push("shortness_of_breath");
+    } else if (
+      lower.includes("forgot") ||
+      lower.includes("didn't take") ||
+      lower.includes("did not take") ||
+      lower.includes("missed")
+    ) {
+      status = "missed_meds";
+    }
+
+    let enrichedTranscript = transcript;
+    if (isDrugQuestion(transcript)) {
+      const answer = answerDrugQuestion(transcript, patient.medications);
+      flags = uniqueFlags([...flags, "drug_question"]);
+      enrichedTranscript = `${transcript}\nPharmacology agent answer: ${answer.answer}`;
+    }
+
+    const persisted = await persistCallResult({
+      patient_id: patient.patient_id,
+      timestamp: new Date().toISOString(),
+      status,
+      transcript: enrichedTranscript,
+      flags: uniqueFlags(flags),
+      fda_alerts: context.fda_alerts,
+    });
+
+    if ("error" in persisted) {
+      return res.status(404).json({ error: persisted.error });
+    }
+
+    return res.status(201).json({
+      call_id: payload.call_id,
+      result: persisted.result,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ error: "Invalid vapi webhook payload" });
+  }
+});
+
+apiRouter.post("/pharmacology/query", (req, res) => {
+  try {
+    const payload = pharmacologyQuerySchema.parse(req.body);
+    const patient = getPatient(payload.patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const answer = answerDrugQuestion(payload.question, patient.medications);
+    return res.json({
+      patient_id: patient.patient_id,
+      question: payload.question,
+      ...answer,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(400).json({ error: "Invalid pharmacology query payload" });
   }
 });
 
@@ -110,4 +271,65 @@ apiRouter.get("/reports/weekly/:patientId", (req, res) => {
     summary: buildWeeklySummary(patient, weeklyCalls),
   });
 });
+
+apiRouter.post("/doctor-briefs/generate/:callId", async (req, res) => {
+  const call = getCallResultById(req.params.callId);
+  if (!call) {
+    return res.status(404).json({ error: "Call result not found" });
+  }
+
+  const patient = getPatient(call.patient_id);
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  if (call.status !== "concern") {
+    return res.status(400).json({
+      error: "Doctor brief generation is only available for concern calls",
+    });
+  }
+
+  try {
+    const brief = await generateDoctorBrief(patient, call);
+    addDoctorBrief(brief);
+    return res.status(201).json({
+      ...brief,
+      cited_doc: "docs/cited.md",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: "Unable to generate doctor brief" });
+  }
+});
+
+apiRouter.get("/doctor-briefs/call/:callId", (req, res) => {
+  const brief = getDoctorBriefByCallId(req.params.callId);
+  if (!brief) {
+    return res.status(404).json({ error: "Doctor brief not found for call" });
+  }
+
+  return res.json({
+    ...brief,
+    cited_doc: "docs/cited.md",
+  });
+});
+
+apiRouter.get("/doctor-briefs/latest/:patientId", (req, res) => {
+  const patient = getPatient(req.params.patientId);
+  if (!patient) {
+    return res.status(404).json({ error: "Patient not found" });
+  }
+
+  const brief = getLatestDoctorBriefForPatient(patient.patient_id);
+  if (!brief) {
+    return res.status(404).json({ error: "No doctor brief generated yet" });
+  }
+
+  return res.json({
+    ...brief,
+    cited_doc: "docs/cited.md",
+  });
+});
+
+const uniqueFlags = (flags: string[]): string[] => Array.from(new Set(flags));
 
