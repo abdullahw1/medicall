@@ -15,7 +15,7 @@ export const config = {
   appUrl: process.env.APP_URL ?? "http://localhost:8080",
   useMockNotifications: process.env.USE_MOCK_NOTIFICATIONS === "true",
   useMockVapi: process.env.USE_MOCK_VAPI === "true",
-  vapiApiBaseUrl: process.env.VAPI_API_BASE_URL ?? "https://api.vapi.ai",
+  vapiApiBaseUrl: (process.env.VAPI_API_BASE_URL ?? "https://api.vapi.ai").replace(/\/+$/, ""),
   vapiApiKey: process.env.VAPI_API_KEY ?? "",
   vapiPhoneNumberId: process.env.VAPI_PHONE_NUMBER_ID ?? "",
   vapiAssistantId: process.env.VAPI_ASSISTANT_ID ?? "",

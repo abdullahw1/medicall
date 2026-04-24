@@ -169,6 +169,111 @@ apiRouter.post("/run-pipeline", async (req, res) => {
   }
 });
 
+// ── Per-agent trigger endpoints ──────────────────────────────────────
+
+apiRouter.post("/trigger/fda-monitor", async (req, res) => {
+  try {
+    const { patient_id } = req.body ?? {};
+    if (!patient_id) {
+      return res.status(400).json({ error: "patient_id is required" });
+    }
+
+    const patient = getPatient(patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const alerts = await fetchFdaAlertsForPatient(
+      config.tinyfishFdaFeedUrl,
+      patient,
+    );
+
+    return res.json({
+      patient_id: patient.patient_id,
+      matched_count: alerts.length,
+      alerts,
+    });
+  } catch (error) {
+    console.error("trigger/fda-monitor error:", error);
+    return res.status(502).json({ error: "FDA monitor fetch failed" });
+  }
+});
+
+apiRouter.post("/trigger/weekly-report", (req, res) => {
+  try {
+    const { patient_id } = req.body ?? {};
+    if (!patient_id) {
+      return res.status(400).json({ error: "patient_id is required" });
+    }
+
+    const patient = getPatient(patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const weeklyCalls = getAllCallResults().filter(
+      (call) =>
+        call.patient_id === patient.patient_id &&
+        Date.parse(call.timestamp) >= weekAgo,
+    );
+
+    return res.json({
+      patient_id: patient.patient_id,
+      summary: buildWeeklySummary(patient, weeklyCalls),
+    });
+  } catch (error) {
+    console.error("trigger/weekly-report error:", error);
+    return res.status(500).json({ error: "Weekly report generation failed" });
+  }
+});
+
+apiRouter.post("/trigger/alert-check", async (req, res) => {
+  try {
+    const { patient_id } = req.body ?? {};
+    if (!patient_id) {
+      return res.status(400).json({ error: "patient_id is required" });
+    }
+
+    const patient = getPatient(patient_id);
+    if (!patient) {
+      return res.status(404).json({ error: "Patient not found" });
+    }
+
+    const recentCalls = getRecentCallResultsForPatient(patient_id, 5);
+    const shouldEscalate = shouldEscalateAlert(recentCalls);
+
+    let deliveries: import("../types.js").AlertDelivery[] = [];
+    if (shouldEscalate) {
+      const latestCall = recentCalls[0];
+      if (latestCall) {
+        deliveries = await sendCaregiverAndDoctorAlert(patient, latestCall);
+        addAlertRecord({
+          alert_id: randomUUID(),
+          call_id: latestCall.call_id,
+          patient_id: patient.patient_id,
+          created_at: new Date().toISOString(),
+          acknowledged: false,
+          acknowledged_at: null,
+          deliveries,
+        });
+      }
+    }
+
+    return res.json({
+      patient_id: patient.patient_id,
+      escalated: shouldEscalate,
+      recent_calls_checked: recentCalls.length,
+      deliveries,
+    });
+  } catch (error) {
+    console.error("trigger/alert-check error:", error);
+    return res.status(500).json({ error: "Alert check failed" });
+  }
+});
+
+// ── General endpoints ───────────────────────────────────────────────
+
 apiRouter.get("/health", (_req, res) => {
   res.json({ ok: true, service: "medicall-person-2" });
 });

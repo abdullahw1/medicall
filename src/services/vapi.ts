@@ -14,17 +14,51 @@ export type VapiOutboundResult = {
 };
 
 const buildAssistantOverrides = (patient: Patient, fdaAlerts: string[]) => {
-  const recallLine =
-    fdaAlerts.length > 0
-      ? `FDA safety context for this patient: ${fdaAlerts.join(" ")}`
-      : "No FDA recall alerts matched this patient today.";
+  const firstName = patient.name.split(" ")[0];
+  const medsFormatted = patient.medications.join(", ");
+
+  const hasRecall = fdaAlerts.length > 0;
+  const recallBlock = hasRecall
+    ? `\n\nIMPORTANT — FDA RECALL ALERT:\nOne or more of this patient's medications has an active FDA recall or safety alert. Details:\n${fdaAlerts.join("\n")}\nYou MUST inform the patient about this recall during the call. Tell them which medication is affected, that there is an active recall, and that they should contact their pharmacy on file to get a replacement as soon as possible. Be clear but calm — do not alarm them unnecessarily.`
+    : `\n\nNo FDA recall alerts matched this patient's medications today. Do NOT mention any recalls.`;
+
+  const systemPrompt = `You are a friendly, warm healthcare check-in assistant for MediCall. Your name is MediCall. You are calling ${patient.name} (first name: ${firstName}) for a routine medication check-in.
+
+PATIENT INFO:
+- Name: ${patient.name}
+- Medications: ${medsFormatted}
+- Timezone: ${patient.timezone}
+
+YOUR GOALS (in order):
+1. Greet the patient warmly by first name. Confirm you're speaking with them.
+2. Ask how they're feeling today. Listen for any health concerns (dizziness, chest pain, confusion, shortness of breath). If they mention any, express concern and note it.
+3. Ask if they've taken their medications today (${medsFormatted}). If they missed any, gently remind them how important it is.
+4. ${hasRecall ? "Inform them about the FDA recall (see below). Tell them which medication is affected and advise them to contact their pharmacy to get a replacement." : "No recall to mention — skip this step."}
+5. Ask if they have any questions about their medications.
+6. Wrap up warmly. Tell them you'll check in again soon and to take care.
+
+TONE: Conversational, caring, like a friendly nurse. Use short sentences. Don't sound robotic. Pause naturally. Use the patient's first name occasionally.
+
+DO NOT:
+- Diagnose anything
+- Prescribe or change medications
+- Give specific medical advice beyond "contact your doctor" or "contact your pharmacy"
+- Rush through the call${recallBlock}`;
+
+  const firstMessage = `Hey, is this ${firstName}? Hi! This is MediCall, just calling to check in on you today. How are you doing?`;
 
   return {
+    firstMessage,
+    model: {
+      provider: "openai" as const,
+      model: "gpt-4.1" as const,
+      messages: [{ role: "system" as const, content: systemPrompt }],
+    },
     variableValues: {
       patient_name: patient.name,
-      patient_medications: patient.medications.join(", "),
+      patient_medications: medsFormatted,
       patient_timezone: patient.timezone,
-      fda_context: recallLine,
+      fda_context: hasRecall ? fdaAlerts.join(" ") : "none",
     },
   };
 };
@@ -50,31 +84,35 @@ const startLiveCall = async (
     config.vapiPhoneNumberId,
   );
 
+  const callPayload = {
+    phoneNumberId: normalizedPhoneNumberId,
+    assistantId: config.vapiAssistantId,
+    customer: {
+      number: request.patient.phone,
+      name: request.patient.name,
+    },
+    assistantOverrides: buildAssistantOverrides(
+      request.patient,
+      request.fdaAlerts,
+    ),
+    metadata: {
+      patient_id: request.patient.patient_id,
+    },
+  };
+
   const response = await fetch(`${config.vapiApiBaseUrl}/call`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${config.vapiApiKey}`,
     },
-    body: JSON.stringify({
-      phoneNumberId: normalizedPhoneNumberId,
-      assistantId: config.vapiAssistantId,
-      customer: {
-        number: request.patient.phone,
-        name: request.patient.name,
-      },
-      assistantOverrides: buildAssistantOverrides(
-        request.patient,
-        request.fdaAlerts,
-      ),
-      metadata: {
-        patient_id: request.patient.patient_id,
-      },
-    }),
+    body: JSON.stringify(callPayload),
   });
 
   if (!response.ok) {
-    throw new Error(`Vapi outbound failed (${response.status})`);
+    const errBody = await response.text().catch(() => "");
+    console.error("Vapi error body:", errBody);
+    throw new Error(`Vapi outbound failed (${response.status}): ${errBody}`);
   }
 
   const payload = (await response.json()) as { id?: string; callId?: string };
