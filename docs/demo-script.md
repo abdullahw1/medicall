@@ -12,16 +12,11 @@ MediCall calls your loved ones every morning, checks if they took their meds, an
 
 ### Guild.ai — The Brain
 
-Guild.ai is the backbone of MediCall. We built a **fleet of four code-first autonomous agents** running on Guild's auto-managed runtime — each one handling a critical piece of the patient care pipeline:
+Guild.ai is the **control plane** for MediCall: workspace **`medicall/medicall`**, a published **code-first agent** (`medicall/medicall-call-agent`, auto-managed state, `fetch` to our API), and **real time-based triggers** so runs are not only manual from the dashboard.
 
-| Agent | What It Does |
-|---|---|
-| **Call Pipeline Agent** | Orchestrates the entire morning check-in flow — FDA fetch, voice call, result classification — in one trigger |
-| **FDA Monitor Agent** | Pulls live recall data and matches it against each patient's medications |
-| **Alert Escalation Agent** | Evaluates recent call history and fires caregiver/doctor notifications when risk thresholds are crossed |
-| **Weekly Report Agent** | Generates compliance summaries for caregivers and physicians |
+**What runs in production today.** A **daily time trigger** (08:00 UTC) invokes `medicall/medicall-call-agent` with explicit JSON input (`command` + `backend_url` → `https://medicall-5v26.onrender.com`). Each run calls **`POST /api/run-pipeline`**, which is where we chain **FDA feed fetch + medication match**, **Vapi outbound** with dynamic assistant overrides, and persistence on our Node service. You can inspect installs, trigger schedules, and session history in the Guild web app (`Organizations → MediCall → Workspaces → medicall`) or from the repo with **`npm run guild:triggers`**, **`npm run guild:agents`**, and **`npm run guild:sessions:time`** (CLI: `npx @guildai/cli`, not GNU Guile’s `guild`).
 
-Every agent is code-first (`AUTO_MANAGED_STATE`), calling dedicated backend endpoints via `fetch`. No prompt engineering, no manual triggers — Guild agents wake up, do their job, and report back. The entire patient care workflow runs **hands-free**, on a schedule or on-demand.
+**What lives in-repo for depth.** Under `guild-agents/` we ship additional **coded** agents (FDA monitor, alert escalation, weekly report) aligned with **`POST /api/trigger/*`** routes—ready to publish and attach as **separate Guild time or webhook triggers** the same way as the call agent, so judges see a deliberate multi-agent split, not a monolith pretending to be “just a cron.”
 
 ### TinyFish — Real-Time FDA Safety
 

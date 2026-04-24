@@ -8,7 +8,12 @@
     "build": "tsgo -p tsconfig.json",
     "start": "node dist/index.js",
     "check": "tsgo --noEmit",
-    "tsgo": "tsgo -p tsconfig.json"
+    "tsgo": "tsgo -p tsconfig.json",
+    "guild:doctor": "npx --yes @guildai/cli@latest doctor",
+    "guild:agents": "npx --yes @guildai/cli@latest workspace agent list --workspace medicall/medicall --json",
+    "guild:triggers": "npx --yes @guildai/cli@latest trigger list --workspace medicall/medicall --json",
+    "guild:sessions": "npx --yes @guildai/cli@latest session list --workspace medicall/medicall --limit 15 --json",
+    "guild:sessions:time": "npx --yes @guildai/cli@latest session list --workspace medicall/medicall --type time --limit 15 --json"
   },
   "repository": {
     "type": "git",

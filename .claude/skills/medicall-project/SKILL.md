@@ -46,7 +46,7 @@ Use this table when explaining "how each sponsor is actually wired":
 | Sponsor | Product role in MediCall | Integration mode in this repo | Where implemented |
 | --- | --- | --- | --- |
 | Vapi | Outbound voice calls + transcript roundtrip | REST API + webhook (`POST https://api.vapi.ai/call`, backend `POST /api/vapi-webhook`) | `src/services/vapi.ts`, `src/routes/api.ts` |
-| Guild.ai | Orchestration/control plane for daily call runs | Guild CLI + Guild Agent SDK (coded agent) | `guild-agent/agent.ts`, `npx @guildai/cli ...` workflow |
+| Guild.ai | Orchestration/control plane for daily call runs | Guild CLI + Agent SDK + **workspace time triggers** (`medicall/medicall` → `medicall/medicall-call-agent`) | `guild-agent/agent.ts`, `guild-agents/*`, `npm run guild:triggers` / `npx @guildai/cli` |
 | InsForge | Notification backend for caregiver/doctor alerts | InsForge SDK (`@insforge/sdk`) | `src/services/insforge.ts` |
 | TinyFish | FDA recall/safety grounding before calls | Project-side HTTP/RSS fetch + medication matching (TinyFish role emulated in-service) | `src/services/tinyfish.ts`, `GET /api/tinyfish/fda-alerts/:patientId` |
 
